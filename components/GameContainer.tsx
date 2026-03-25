@@ -92,43 +92,43 @@ interface WeatherEffect {
 const WEATHER_EFFECTS: Record<WeatherType, WeatherEffect> = {
   sunny: {
     id: 'sunny',
-    name: 'Ensolarado',
+    name: 'Sunny',
     icon: '☀️',
-    description: 'Condições ideais para o Café. Produção de Café +20%.',
+    description: 'Ideal conditions for Coffee. Coffee production +20%.',
     growthMultiplier: 1.0,
     yieldMultiplier: 1.0,
     bonusCategory: 'coffee'
   },
   rainy: {
     id: 'rainy',
-    name: 'Chuvoso',
+    name: 'Rainy',
     icon: '🌧️',
-    description: 'Crescimento acelerado em 25% para todas as culturas.',
+    description: 'Accelerated growth by 25% for all crops.',
     growthMultiplier: 1.25,
     yieldMultiplier: 1.0
   },
   stormy: {
     id: 'stormy',
-    name: 'Tempestuoso',
+    name: 'Stormy',
     icon: '⛈️',
-    description: 'Risco de danos. Produção reduzida em 15%.',
+    description: 'Risk of damage. Production reduced by 15%.',
     growthMultiplier: 0.8,
     yieldMultiplier: 0.85
   },
   heatwave: {
     id: 'heatwave',
-    name: 'Onda de Calor',
+    name: 'Heatwave',
     icon: '🔥',
-    description: 'Ideal para o Algodão. Produção de Algodão +30%.',
+    description: 'Ideal for Cotton. Cotton production +30%.',
     growthMultiplier: 0.9,
     yieldMultiplier: 1.0,
     bonusCategory: 'cotton'
   },
   drought: {
     id: 'drought',
-    name: 'Seca',
+    name: 'Drought',
     icon: '🌵',
-    description: 'Crescimento lento (-30%). Economize água!',
+    description: 'Slow growth (-30%). Save water!',
     growthMultiplier: 0.7,
     yieldMultiplier: 0.9
   }
@@ -143,27 +143,28 @@ interface GameEvent {
   multiplier: number;
   startTime: number;
   endTime: number;
+  targetItemId?: string;
 }
 
 const EVENT_TEMPLATES = {
   harvest_festival: {
-    name: 'Festival da Colheita',
+    name: 'Harvest Festival',
     icon: '🌾',
-    description: 'Celebração nacional! Todas as colheitas rendem 50% mais.',
+    description: 'National celebration! All harvests yield 50% more.',
     type: 'bonus_yield',
     multiplier: 1.5
   },
   market_boom: {
-    name: 'Boom de Exportação',
+    name: 'Export Boom',
     icon: '🚢',
-    description: 'Alta demanda internacional! Preços de venda +30%.',
+    description: 'High international demand! Selling prices +30%.',
     type: 'market_boom',
     multiplier: 1.3
   },
   training_day: {
-    name: 'Dia de Formação',
+    name: 'Training Day',
     icon: '📚',
-    description: 'Aprenda novas técnicas! Ganho de XP dobrado.',
+    description: 'Learn new techniques! XP gain doubled.',
     type: 'xp_boost',
     multiplier: 2.0
   }
@@ -767,7 +768,7 @@ export default function GameContainer() {
             }
             
             // 4. Event influence
-            const priceBoom = activeEventsRefValue.current.find(e => e.type === 'price_boom');
+            const priceBoom = activeEventsRefValue.current.find(e => e.type === 'market_boom');
             if (priceBoom && (!priceBoom.targetItemId || priceBoom.targetItemId === id)) {
               fluctuation += 0.02; // Stronger upward pressure during boom
             }
@@ -871,7 +872,7 @@ export default function GameContainer() {
     } catch (error: any) {
       if (error.code === 'auth/unauthorized-domain') {
         addNotification(
-          'Erro de Domínio Não Autorizado! Adicione os domínios do AI Studio no seu Console do Firebase.',
+          'Unauthorized Domain Error! Add AI Studio domains to your Firebase Console.',
           'error'
         );
       } else {
@@ -953,7 +954,7 @@ export default function GameContainer() {
     
     const price = commodity.price;
     if (!profile || profile.balanceKZ < price) {
-      addNotification('Saldo insuficiente para comprar esta semente!', 'error');
+      addNotification('Insufficient balance to buy this seed!', 'error');
       return;
     }
     
@@ -982,12 +983,12 @@ export default function GameContainer() {
 
     update(ref(rtdb), updates)
       .then(() => {
-        addNotification(`Compra de ${commodity.name} realizada com sucesso!`, 'success');
+        addNotification(`Purchase of ${commodity.name} successful!`, 'success');
         updateMissionProgress('buy', itemId, 1);
       })
       .catch(err => {
         handleRtdbError(err, OperationType.WRITE, `inventory/${user.uid}/${itemId}`);
-        addNotification('Erro ao processar compra.', 'error');
+        addNotification('Error processing purchase.', 'error');
       });
   };
 
@@ -1061,27 +1062,27 @@ export default function GameContainer() {
   const feedAnimal = useCallback(async (slotId: string, feedItemId: string) => {
     const slot = slots.find(s => s.id === slotId);
     if (!user) {
-      addNotification('Usuário não autenticado.', 'error');
+      addNotification('User not authenticated.', 'error');
       return;
     }
     if (!slot) {
-      addNotification('Slot não encontrado.', 'error');
+      addNotification('Slot not found.', 'error');
       return;
     }
     if (slot.status !== 'hungry') {
-      addNotification('Este animal não está com fome.', 'error');
+      addNotification('This animal is not hungry.', 'error');
       return;
     }
 
     const qty = inventory[feedItemId] || 0;
     if (qty <= 0) {
-      addNotification('Você não tem este alimento no armazém!', 'error');
+      addNotification('You do not have this food in the warehouse!', 'error');
       return;
     }
 
     const product = currentCommodities[slot.itemId as keyof typeof currentCommodities];
     if (!product) {
-      addNotification('Informação do produto não encontrada.', 'error');
+      addNotification('Product information not found.', 'error');
       return;
     }
     
@@ -1093,7 +1094,7 @@ export default function GameContainer() {
     const requiredFoodId = (slot as any).requiredFoodId || fallbackFoodId;
     
     if (requiredFoodId && requiredFoodId !== feedItemId) {
-      addNotification(`Este animal só come ${currentCommodities[requiredFoodId]?.name || 'outro alimento'}!`, 'error');
+      addNotification(`This animal only eats ${currentCommodities[requiredFoodId]?.name || 'other food'}!`, 'error');
       return;
     }
 
@@ -1114,10 +1115,10 @@ export default function GameContainer() {
     influenceMarket(feedItemId, 0.001, updates); // +0.1% influence
 
     update(ref(rtdb), updates).then(() => {
-      addNotification(`Animal alimentado com ${currentCommodities[feedItemId]?.name}!`);
+      addNotification(`Animal fed with ${currentCommodities[feedItemId]?.name}!`);
       updateMissionProgress('feed', feedItemId, 1);
     }).catch(err => {
-      addNotification('Erro ao alimentar animal no servidor.', 'error');
+      addNotification('Error feeding animal on the server.', 'error');
       handleRtdbError(err, OperationType.WRITE, `farmSlots/${user.uid}/${slotId}`);
     });
   }, [user, slots, inventory, currentCommodities, influenceMarket, updateMissionProgress]);
@@ -1206,14 +1207,14 @@ export default function GameContainer() {
     // Check balance for production tax
     const tax = gameConfig?.productionTaxKZ || 0;
     if (profile.balanceKZ < tax) {
-      addNotification(`Saldo insuficiente para pagar a taxa de produção (${tax} KZ)!`, 'error');
+      addNotification(`Insufficient balance to pay the production tax (${tax} KZ)!`, 'error');
       return;
     }
 
     // Check inputs
     for (const input of recipe.inputs) {
       if ((inventory[input.itemId] || 0) < input.quantity) {
-        addNotification(`Ingredientes insuficientes!`, 'error');
+        addNotification(`Insufficient ingredients!`, 'error');
         return;
       }
     }
@@ -1267,7 +1268,7 @@ export default function GameContainer() {
     const basePrice = marketItem?.basePrice || itemInfo?.basePrice || 0;
 
     if (currentPrice <= 0) {
-      addNotification('Este item não tem valor de mercado!', 'error');
+      addNotification('This item has no market value!', 'error');
       return;
     }
 
@@ -1309,7 +1310,7 @@ export default function GameContainer() {
   const buySlot = async (area: 'cultivo' | 'curral') => {
     const price = gameConfig?.slotPrice || SLOT_PRICE;
     if (!profile || profile.balanceKZ < price) {
-      addNotification('Saldo insuficiente para comprar um novo slot!', 'error');
+      addNotification('Insufficient balance to buy a new slot!', 'error');
       return;
     }
     
@@ -1380,7 +1381,7 @@ export default function GameContainer() {
   const buyFromMarket = async (listing: MarketListing, now: number) => {
     const totalPrice = listing.pricePerUnit * listing.quantity;
     if (!profile || profile.balanceKZ < totalPrice) {
-      addNotification('Saldo insuficiente para esta compra no mercado!', 'error');
+      addNotification('Insufficient balance for this market purchase!', 'error');
       return;
     }
     if (listing.sellerId === user.uid) return;
@@ -1469,10 +1470,10 @@ export default function GameContainer() {
     update(ref(rtdb), updates).then(() => {
       setAdminEditingItem(null);
       setItemToDeleteId(null);
-      addNotification('Item excluído definitivamente!', 'success');
+      addNotification('Item permanently deleted!', 'success');
     }).catch(err => {
       console.error('Admin delete failed:', err);
-      addNotification('Erro ao excluir item.', 'error');
+      addNotification('Error deleting item.', 'error');
     });
   };
 
@@ -1495,11 +1496,11 @@ export default function GameContainer() {
     }
     
     update(ref(rtdb), updates).then(() => {
-      addNotification(`Item ${data.name} atualizado!`, 'success');
+      addNotification(`Item ${data.name} updated!`, 'success');
       setAdminEditingItem(null);
     }).catch(err => {
       console.error('Admin update failed:', err);
-      addNotification('Erro ao atualizar item.', 'error');
+      addNotification('Error updating item.', 'error');
     });
   };
 
@@ -1524,11 +1525,11 @@ export default function GameContainer() {
     }
     
     update(ref(rtdb), updates).then(() => {
-      addNotification(`Item ${data.name} adicionado!`, 'success');
+      addNotification(`Item ${data.name} added!`, 'success');
       setAdminEditingItem(null);
     }).catch(err => {
       console.error('Admin add failed:', err);
-      addNotification('Erro ao adicionar item.', 'error');
+      addNotification('Error adding item.', 'error');
     });
   };
 
@@ -1569,13 +1570,13 @@ export default function GameContainer() {
     if (!isAdmin) return;
     
     askConfirmation(
-      'Resetar Sistema Financeiro',
-      'TEM CERTEZA? Isso resetará o saldo bancário do sistema e o lucro do mercado para ZERO.',
+      'Reset Financial System',
+      'ARE YOU SURE? This will reset the system bank balance and market profit to ZERO.',
       () => {
         const systemRef = ref(rtdb, 'globalConfig/system');
         set(systemRef, { playerDepositsMinusWithdrawals: 0, marketProfit: 0 })
-          .then(() => addNotification('Sistema financeiro resetado!', 'success'))
-          .catch(err => addNotification('Erro ao resetar sistema financeiro.', 'error'));
+          .then(() => addNotification('Financial system reset!', 'success'))
+          .catch(err => addNotification('Error resetting financial system.', 'error'));
       }
     );
   };
@@ -1584,8 +1585,8 @@ export default function GameContainer() {
     if (!isAdmin) return;
 
     askConfirmation(
-      'Resetar Bolsa de Valores',
-      'Deseja resetar a Bolsa de Valores? Todos os preços voltarão ao valor base.',
+      'Reset Stock Market',
+      'Do you want to reset the Stock Market? All prices will return to base value.',
       async () => {
         try {
           const marketRef = ref(rtdb, 'market');
@@ -1601,10 +1602,10 @@ export default function GameContainer() {
             };
           });
           await set(marketRef, initialMarket);
-          addNotification('Bolsa de Valores resetada!', 'success');
+          addNotification('Stock Market reset!', 'success');
         } catch (err) {
           console.error('Reset market failed:', err);
-          addNotification('Erro ao resetar Bolsa.', 'error');
+          addNotification('Error resetting market.', 'error');
         }
       }
     );
@@ -1614,12 +1615,12 @@ export default function GameContainer() {
     if (!isAdmin) return;
 
     askConfirmation(
-      'RESET TOTAL DE CONTAS',
-      'ATENÇÃO: AÇÃO IRREVERSÍVEL! Isso resetará TODAS as contas de TODOS os utilizadores (Saldo, Inventário, Fazenda, Nível). Deseja continuar?',
+      'TOTAL ACCOUNT RESET',
+      'ATTENTION: IRREVERSIBLE ACTION! This will reset ALL accounts for ALL users (Balance, Inventory, Farm, Level). Do you want to continue?',
       () => {
         askConfirmation(
-          'ÚLTIMO AVISO',
-          'Todos os dados de progresso dos jogadores serão apagados permanentemente. Confirmar reset total?',
+          'LAST WARNING',
+          'All player progress data will be permanently deleted. Confirm total reset?',
           async () => {
             try {
               // 1. Reset RTDB paths
@@ -1656,12 +1657,12 @@ export default function GameContainer() {
 
               await Promise.all(batch);
               
-              addNotification('TODAS as contas foram resetadas com sucesso!', 'success');
+              addNotification('ALL accounts have been reset successfully!', 'success');
               // Force reload to ensure fresh state
               window.location.reload();
             } catch (err) {
               console.error('Reset all accounts failed:', err);
-              addNotification('Erro ao resetar contas.', 'error');
+              addNotification('Error resetting accounts.', 'error');
             }
           }
         );
@@ -1701,7 +1702,7 @@ export default function GameContainer() {
   const adminUpdateWeather = async (newWeather: WeatherType) => {
     if (!isAdmin) return;
     set(ref(rtdb, 'globalConfig/weather'), newWeather)
-      .then(() => addNotification(`Clima alterado para ${weatherEffects[newWeather].name}!`, 'success'))
+      .then(() => addNotification(`Weather changed to ${weatherEffects[newWeather].name}!`, 'success'))
       .catch(err => console.error('Update weather failed:', err));
   };
 
@@ -1718,14 +1719,14 @@ export default function GameContainer() {
     const eventRef = push(ref(rtdb, 'globalConfig/scheduledEvents'));
     const newEvent = { ...eventData, id: eventRef.key };
     set(eventRef, newEvent)
-      .then(() => addNotification('Evento agendado com sucesso!', 'success'))
+      .then(() => addNotification('Event scheduled successfully!', 'success'))
       .catch(err => console.error('Schedule event failed:', err));
   };
 
   const adminDeleteEvent = async (eventId: string) => {
     if (!isAdmin) return;
     remove(ref(rtdb, `globalConfig/scheduledEvents/${eventId}`))
-      .then(() => addNotification('Evento removido!', 'success'))
+      .then(() => addNotification('Event removed!', 'success'))
       .catch(err => console.error('Delete event failed:', err));
   };
 
@@ -1796,7 +1797,7 @@ export default function GameContainer() {
       if (currentInventoryQty <= 0) {
         addNotification(`Você não tem ${currentCommodities[targetItemId]?.name || targetItemId} para entregar!`, 'error');
       } else {
-        addNotification('Esta missão já está com a entrega completa!', 'info');
+        addNotification('Esta missão já está com a entrega completa!', 'success');
       }
       return;
     }
@@ -1820,14 +1821,14 @@ export default function GameContainer() {
     updates[`users/${user.uid}/missionProgress/${missionId}`] = newProgress;
 
     if (isCompleted) {
-      addNotification(`Missão de Entrega Concluída: ${mission.title}!`, 'success');
+      addNotification(`Delivery Mission Completed: ${mission.title}!`, 'success');
     } else {
-      addNotification(`Entregue ${toDeliver}x ${currentCommodities[targetItemId]?.name || targetItemId}.`);
+      addNotification(`Delivered ${toDeliver}x ${currentCommodities[targetItemId]?.name || targetItemId}.`);
     }
 
     update(ref(rtdb), updates).catch(err => {
       console.error('Failed to deliver mission items:', err);
-      addNotification('Erro ao entregar itens.', 'error');
+      addNotification('Error delivering items.', 'error');
     });
   }, [user, missions, userMissionProgress, inventory, currentCommodities]);
 
@@ -1863,7 +1864,7 @@ export default function GameContainer() {
     updates[`users/${user.uid}/missionProgress/${missionId}/claimed`] = true;
 
     update(ref(rtdb), updates)
-      .then(() => addNotification(`Recompensa da missão ${mission.title} resgatada!`, 'success'))
+      .then(() => addNotification(`Reward for mission ${mission.title} claimed!`, 'success'))
       .catch(err => console.error('Failed to claim mission reward:', err));
   };
 
@@ -1873,21 +1874,21 @@ export default function GameContainer() {
     const finalData = { ...data, id: finalId };
     update(ref(rtdb, `globalConfig/game/data/missions/${finalId}`), finalData).then(() => {
       setAdminEditingMission(null);
-      addNotification('Missão salva com sucesso!', 'success');
+      addNotification('Mission saved successfully!', 'success');
     }).catch(err => console.error('Admin add mission failed:', err));
   };
 
   const adminDeleteMission = async (missionId: string) => {
     if (!isAdmin) return;
     remove(ref(rtdb, `globalConfig/game/data/missions/${missionId}`)).then(() => {
-      addNotification('Missão removida!', 'success');
+      addNotification('Mission removed!', 'success');
     }).catch(err => console.error('Admin delete mission failed:', err));
   };
 
   if (loading) return (
     <div className="h-screen flex flex-col items-center justify-center bg-stone-100 p-4">
       <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
-      <p className="mt-4 text-stone-600 font-medium">Carregando Fazenda...</p>
+      <p className="mt-4 text-stone-600 font-medium">Loading Farm...</p>
     </div>
   );
 
@@ -1898,15 +1899,15 @@ export default function GameContainer() {
         <div className="bg-rose-100 p-6 rounded-full mb-6">
           <ShieldAlert className="w-12 h-12 text-rose-600" />
         </div>
-        <h1 className="text-2xl font-serif italic font-bold text-stone-900 mb-2">Acesso Suspenso</h1>
+        <h1 className="text-2xl font-serif italic font-bold text-stone-900 mb-2">Access Suspended</h1>
         <p className="text-stone-600 max-w-xs mx-auto mb-8">
-          Sua conta foi suspensa por violação dos termos de serviço do sistema Fazenda Kwanza.
+          Your account has been suspended for violating the Fazenda Kwanza system terms of service.
         </p>
         <button 
           onClick={() => signOut(auth)}
           className="px-8 py-3 bg-stone-900 text-white rounded-2xl font-bold shadow-lg hover:bg-stone-800 transition-all"
         >
-          Sair da Conta
+          Logout
         </button>
       </div>
     );
@@ -1923,12 +1924,12 @@ export default function GameContainer() {
           <Sprout className="text-white w-12 h-12" />
         </div>
         <h1 className="text-4xl font-bold text-stone-900 font-serif italic">Fazenda Kwanza</h1>
-        <p className="text-stone-600">Gerencie sua terra, plante o futuro e domine a bolsa de commodities agrícolas de Angola.</p>
+        <p className="text-stone-600">Manage your land, plant the future and dominate the Angolan agricultural commodity market.</p>
         <button 
           onClick={handleLogin}
           className="w-full py-4 bg-stone-900 text-white rounded-2xl font-bold hover:bg-stone-800 transition-all flex items-center justify-center gap-2"
         >
-          Entrar com Google
+          Login with Google
         </button>
       </motion.div>
     </div>
@@ -1942,21 +1943,21 @@ export default function GameContainer() {
         className="text-center space-y-4"
       >
         <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <h2 className="text-xl font-bold text-stone-800">Sincronizando sua fazenda...</h2>
+        <h2 className="text-xl font-bold text-stone-800">Synchronizing your farm...</h2>
         <p className="text-stone-500 text-sm max-w-xs mx-auto">
-          Se isso demorar muito, verifique sua conexão ou se as permissões do banco de dados estão corretas.
+          If this takes too long, check your connection or if the database permissions are correct.
         </p>
         <button 
           onClick={() => window.location.reload()}
           className="text-emerald-600 font-bold text-sm underline"
         >
-          Recarregar página
+          Reload page
         </button>
         <button 
           onClick={() => signOut(auth)}
           className="block mx-auto text-stone-400 text-xs mt-8"
         >
-          Sair da conta
+          Logout
         </button>
       </motion.div>
     </div>
@@ -2408,7 +2409,7 @@ export default function GameContainer() {
               <div className="bg-stone-900 rounded-3xl p-6 text-white shadow-xl">
                 <div className="flex items-center gap-3 mb-6">
                   <Store className="w-6 h-6 text-emerald-400" />
-                  <h3 className="text-xl font-serif italic font-bold">Loja do Sistema</h3>
+                  <h3 className="text-xl font-serif italic font-bold">System Store</h3>
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2433,7 +2434,7 @@ export default function GameContainer() {
                           </div>
                           <div>
                             <h4 className="font-bold text-sm">{data.name}</h4>
-                            <p className="text-[10px] text-stone-400 uppercase tracking-widest">Preço: {price} KZ</p>
+                            <p className="text-[10px] text-stone-400 uppercase tracking-widest">Price: {price} KZ</p>
                           </div>
                         </div>
                         <button 
@@ -2441,7 +2442,7 @@ export default function GameContainer() {
                           disabled={profile.balanceKZ < price}
                           className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-[10px] font-bold hover:bg-emerald-500 transition-all disabled:opacity-20"
                         >
-                          Comprar
+                          Buy
                         </button>
                       </motion.div>
                     );
@@ -2463,13 +2464,13 @@ export default function GameContainer() {
               <div className="bg-stone-900 rounded-3xl p-6 text-white shadow-xl">
                 <div className="flex items-center gap-3 mb-6">
                   <Store className="w-6 h-6 text-emerald-400" />
-                  <h3 className="text-xl font-serif italic font-bold">Mercado entre Jogadores</h3>
+                  <h3 className="text-xl font-serif italic font-bold">Player Market</h3>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {marketListings.filter(l => l.sellerId !== user.uid).length === 0 ? (
                     <div className="col-span-2 py-8 text-center text-stone-500 text-sm bg-black/20 rounded-2xl border border-white/5">
-                      Nenhum item disponível no mercado P2P no momento.
+                      No items available in the P2P market at the moment.
                     </div>
                   ) : (
                     marketListings.filter(l => l.sellerId !== user.uid).map(listing => (
@@ -2484,7 +2485,7 @@ export default function GameContainer() {
                           </div>
                           <div>
                             <h4 className="font-bold text-sm">{(currentCommodities as any)[listing.itemId]?.name}</h4>
-                            <p className="text-[10px] text-stone-400">Vendedor: {listing.sellerName}</p>
+                            <p className="text-[10px] text-stone-400">Seller: {listing.sellerName}</p>
                           </div>
                         </div>
                         <div className="text-right">
@@ -2494,7 +2495,7 @@ export default function GameContainer() {
                             disabled={profile.balanceKZ < (listing.pricePerUnit * listing.quantity)}
                             className="mt-2 px-3 py-1 bg-emerald-600 text-white rounded-lg text-[10px] font-bold hover:bg-emerald-500 transition-all disabled:opacity-20"
                           >
-                            Comprar
+                            Buy
                           </button>
                         </div>
                       </div>
@@ -2506,7 +2507,7 @@ export default function GameContainer() {
               {/* System Market (Bolsa) */}
               <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
                 <div className="p-4 border-b border-stone-100 bg-stone-50/50 flex justify-between items-center">
-                  <h3 className="font-serif italic font-bold">Bolsa de Valores</h3>
+                  <h3 className="font-serif italic font-bold">Stock Market</h3>
                   <div className="flex items-center gap-2">
                     {isAdmin && (
                       <button 
@@ -2517,7 +2518,7 @@ export default function GameContainer() {
                         <RefreshCw className="w-3.5 h-3.5" />
                       </button>
                     )}
-                    <span className="text-[10px] uppercase tracking-widest text-stone-400">Referência de Preço</span>
+                    <span className="text-[10px] uppercase tracking-widest text-stone-400">Price Reference</span>
                   </div>
                 </div>
                 <div className="p-4 bg-stone-50/50 border-b border-stone-100 flex gap-2 overflow-x-auto no-scrollbar">
@@ -2595,13 +2596,13 @@ export default function GameContainer() {
               className="space-y-6"
             >
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-serif italic font-bold text-stone-800">Missões e Objetivos</h2>
+                <h2 className="text-2xl font-serif italic font-bold text-stone-800">Missions and Objectives</h2>
                 <div className="flex gap-2">
                   <div className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-[10px] font-bold uppercase tracking-wider border border-amber-200">
-                    Diárias
+                    Daily
                   </div>
                   <div className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] font-bold uppercase tracking-wider border border-blue-200">
-                    Semanais
+                    Weekly
                   </div>
                 </div>
               </div>
@@ -2611,8 +2612,8 @@ export default function GameContainer() {
                   <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto">
                     <ClipboardList className="w-8 h-8 text-stone-300" />
                   </div>
-                  <h3 className="font-serif italic text-xl font-bold">Nenhuma missão disponível</h3>
-                  <p className="text-stone-500 text-sm max-w-xs mx-auto">O conselho da cidade ainda não publicou novos pedidos. Volte mais tarde!</p>
+                  <h3 className="font-serif italic text-xl font-bold">No missions available</h3>
+                  <p className="text-stone-500 text-sm max-w-xs mx-auto">The city council hasn't published new requests yet. Come back later!</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2652,7 +2653,7 @@ export default function GameContainer() {
                             </div>
                           </div>
                           <div className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-lg ${mission.period === 'daily' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
-                            {mission.period === 'daily' ? 'Dia' : 'Semana'}
+                            {mission.period === 'daily' ? 'Day' : 'Week'}
                           </div>
                         </div>
 
@@ -2672,7 +2673,7 @@ export default function GameContainer() {
 
                         <div className="flex items-center justify-between pt-2 border-t border-stone-100">
                           <div className="flex items-center gap-3">
-                            <span className="text-[10px] font-bold uppercase text-stone-400">Recompensa:</span>
+                            <span className="text-[10px] font-bold uppercase text-stone-400">Reward:</span>
                             <div className="flex items-center gap-2">
                               {mission.rewardKZ > 0 && (
                                 <div className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-xs font-bold">
@@ -2698,12 +2699,12 @@ export default function GameContainer() {
                             </button>
                           ) : progress.completed && progress.claimed ? (
                             <div className="flex items-center gap-1 text-emerald-600 font-bold text-xs">
-                              <Check className="w-4 h-4" /> Concluída
+                              <Check className="w-4 h-4" /> Completed
                             </div>
                           ) : mission.type === 'delivery' ? (
                             <div className="flex items-center gap-2">
                               <div className="text-[10px] font-bold text-stone-400 uppercase">
-                                No Armazém: <span className={inventory[mission.targetItemId] > 0 ? 'text-emerald-600' : 'text-rose-500'}>{inventory[mission.targetItemId] || 0}</span>
+                                In Warehouse: <span className={inventory[mission.targetItemId] > 0 ? 'text-emerald-600' : 'text-rose-500'}>{inventory[mission.targetItemId] || 0}</span>
                               </div>
                               <button
                                 onClick={() => deliverMissionItems(mission.id)}
@@ -2714,7 +2715,7 @@ export default function GameContainer() {
                                     : 'bg-stone-100 text-stone-400 cursor-not-allowed'
                                 }`}
                               >
-                                Entregar
+                                Deliver
                               </button>
                             </div>
                           ) : (
@@ -2741,12 +2742,12 @@ export default function GameContainer() {
             >
               <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
                 <div className="p-4 border-b border-stone-100 bg-stone-50/50 flex justify-between items-center">
-                  <h3 className="font-serif italic font-bold">Histórico de Transações</h3>
-                  <span className="text-[10px] uppercase tracking-widest text-stone-400">Últimas 50 operações</span>
+                  <h3 className="font-serif italic font-bold">Transaction History</h3>
+                  <span className="text-[10px] uppercase tracking-widest text-stone-400">Last 50 operations</span>
                 </div>
                 <div className="divide-y divide-stone-100 max-h-[60vh] overflow-y-auto">
                   {transactions.length === 0 ? (
-                    <div className="p-8 text-center text-stone-400 text-sm">Nenhuma transação registrada.</div>
+                    <div className="p-8 text-center text-stone-400 text-sm">No transactions recorded.</div>
                   ) : (
                     transactions.map(t => (
                       <div key={t.id} className="p-4 flex items-center justify-between hover:bg-stone-50 transition-colors">
@@ -2810,23 +2811,23 @@ export default function GameContainer() {
                   <ShieldAlert className="text-white w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-rose-900">Painel de Administração</h3>
-                  <p className="text-xs text-rose-800/70">Acesso restrito para gerenciamento do ecossistema Fazenda Kwanza.</p>
+                  <h3 className="font-bold text-rose-900">Administration Panel</h3>
+                  <p className="text-xs text-rose-800/70">Restricted access for managing the Fazenda Kwanza ecosystem.</p>
                 </div>
               </div>
 
               {/* Admin Sub-tabs */}
               <div className="flex gap-2 p-1 bg-stone-100 rounded-2xl w-full overflow-x-auto no-scrollbar">
                 {[
-                  { id: 'financials', label: 'Finanças' },
-                  { id: 'weather', label: 'Clima/Eventos' },
-                  { id: 'missions', label: 'Missões' },
-                  { id: 'commodities', label: 'Itens' },
-                  { id: 'recipes', label: 'Receitas' },
-                  { id: 'levels', label: 'Níveis' },
-                  { id: 'users', label: 'Usuários' },
-                  { id: 'deposits', label: 'Depósitos' },
-                  { id: 'withdrawals', label: 'Saques' },
+                  { id: 'financials', label: 'Financials' },
+                  { id: 'weather', label: 'Weather/Events' },
+                  { id: 'missions', label: 'Missions' },
+                  { id: 'commodities', label: 'Items' },
+                  { id: 'recipes', label: 'Recipes' },
+                  { id: 'levels', label: 'Levels' },
+                  { id: 'users', label: 'Users' },
+                  { id: 'deposits', label: 'Deposits' },
+                  { id: 'withdrawals', label: 'Withdrawals' },
                   { id: 'settings', label: 'Config' }
                 ].map(tab => (
                   <button 
@@ -2844,7 +2845,7 @@ export default function GameContainer() {
               <div className="bg-stone-900 rounded-3xl p-6 text-white shadow-xl">
                 <div className="flex items-center gap-3 mb-6">
                   <Wallet className="w-6 h-6 text-emerald-400" />
-                  <h3 className="text-xl font-serif italic font-bold">Finanças do Sistema</h3>
+                  <h3 className="text-xl font-serif italic font-bold">System Financials</h3>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -2859,7 +2860,7 @@ export default function GameContainer() {
                 </div>
 
                 <div className="space-y-3">
-                  <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Injetar Banca no Sistema</p>
+                  <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Inject Funds into System</p>
                   <div className="grid grid-cols-4 gap-2">
                     {[10000, 50000, 100000, 500000].map(amt => (
                       <button 
@@ -2889,13 +2890,13 @@ export default function GameContainer() {
               <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden shadow-sm">
                 <div className="p-4 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
                   <h3 className="font-serif italic font-bold flex items-center gap-2">
-                    <Sun className="w-5 h-5 text-amber-500" /> Clima e Eventos
+                    <Sun className="w-5 h-5 text-amber-500" /> Weather and Events
                   </h3>
                 </div>
                 <div className="p-6 space-y-8">
                   {/* Weather Control */}
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400 block mb-3 tracking-widest">Controle de Clima e Buffs</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400 block mb-3 tracking-widest">Weather and Buff Control</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {Object.values(weatherEffects).map(w => (
                         <div 
@@ -2933,11 +2934,11 @@ export default function GameContainer() {
                           
                           <div className="grid grid-cols-2 gap-2">
                             <div className="bg-white/50 p-2 rounded-xl border border-stone-100/50">
-                              <p className="text-[8px] uppercase font-bold text-stone-400 mb-0.5">Crescimento</p>
+                              <p className="text-[8px] uppercase font-bold text-stone-400 mb-0.5">Growth</p>
                               <p className="text-xs font-mono font-bold text-stone-900">{w.growthMultiplier}x</p>
                             </div>
                             <div className="bg-white/50 p-2 rounded-xl border border-stone-100/50">
-                              <p className="text-[8px] uppercase font-bold text-stone-400 mb-0.5">Produção</p>
+                              <p className="text-[8px] uppercase font-bold text-stone-400 mb-0.5">Yield</p>
                               <p className="text-xs font-mono font-bold text-stone-900">{w.yieldMultiplier}x</p>
                             </div>
                           </div>
@@ -2950,19 +2951,19 @@ export default function GameContainer() {
                   {/* Scheduled Events */}
                   <div className="pt-6 border-t border-stone-100">
                     <div className="flex items-center justify-between mb-4">
-                      <label className="text-[10px] font-bold uppercase text-stone-400 block tracking-widest">Eventos Agendados</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400 block tracking-widest">Scheduled Events</label>
                       <button 
                         onClick={() => setShowEventModal(true)}
                         className="px-3 py-1.5 bg-stone-900 text-white rounded-lg text-[10px] font-bold hover:bg-stone-800 transition-all flex items-center gap-1"
                       >
-                        <Plus className="w-3 h-3" /> Agendar Evento
+                        <Plus className="w-3 h-3" /> Schedule Event
                       </button>
                     </div>
                     
                     <div className="space-y-3">
                       {scheduledEvents.length === 0 ? (
                         <div className="p-8 text-center bg-stone-50 rounded-2xl border border-dashed border-stone-200 text-stone-400 text-xs">
-                          Nenhum evento agendado.
+                          No events scheduled.
                         </div>
                       ) : (
                         scheduledEvents.map(event => {
@@ -3034,7 +3035,7 @@ export default function GameContainer() {
                 <div className="p-6">
                   {missions.length === 0 ? (
                     <div className="p-8 text-center bg-stone-50 rounded-2xl border border-dashed border-stone-200 text-stone-400 text-xs">
-                      Nenhuma missão cadastrada.
+                      No missions registered.
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -3045,7 +3046,7 @@ export default function GameContainer() {
                             <div>
                               <h4 className="font-bold text-sm">{mission.title}</h4>
                               <p className="text-[10px] text-stone-500 uppercase tracking-widest">
-                                {mission.period === 'daily' ? 'Diária' : 'Semanal'} • {mission.type} • {mission.targetQuantity}x {currentCommodities[mission.targetItemId as keyof typeof currentCommodities]?.name || mission.targetItemId}
+                                {mission.period === 'daily' ? 'Daily' : 'Weekly'} • {mission.type} • {mission.targetQuantity}x {currentCommodities[mission.targetItemId as keyof typeof currentCommodities]?.name || mission.targetItemId}
                               </p>
                             </div>
                           </div>
@@ -3075,11 +3076,11 @@ export default function GameContainer() {
               {adminTab === 'settings' && (
               <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
                 <div className="p-4 border-b border-stone-100 bg-stone-50/50">
-                  <h3 className="font-serif italic font-bold">Configurações Globais</h3>
+                  <h3 className="font-serif italic font-bold">Global Settings</h3>
                 </div>
                 <div className="p-6 space-y-6">
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2">Slots Iniciais para Novos Jogadores</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2">Initial Slots for New Players</label>
                     <div className="flex gap-2">
                       <input 
                         type="number"
@@ -3093,23 +3094,23 @@ export default function GameContainer() {
                         onClick={() => adminUpdateInitialSlots(initialSlotsCount)}
                         className="px-6 bg-stone-900 text-white rounded-xl font-bold hover:bg-stone-800 transition-all text-xs"
                       >
-                        Salvar
+                        Save
                       </button>
                     </div>
                   </div>
 
                   <div className="pt-6 border-t border-stone-100">
                     <h4 className="text-xs font-bold text-rose-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <ShieldAlert className="w-4 h-4" /> Zona de Perigo
+                      <ShieldAlert className="w-4 h-4" /> Danger Zone
                     </h4>
                     <button 
                       onClick={adminResetAllAccounts}
                       className="w-full py-4 bg-rose-50 text-rose-600 border border-rose-200 rounded-2xl font-bold hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center gap-2 shadow-sm"
                     >
-                      <Trash2 className="w-5 h-5" /> RESET TOTAL DE CONTAS
+                      <Trash2 className="w-5 h-5" /> TOTAL ACCOUNT RESET
                     </button>
                     <p className="text-[10px] text-stone-400 text-center mt-3 uppercase tracking-widest">
-                      Isso apagará o progresso de todos os jogadores permanentemente.
+                      This will permanently erase all player progress.
                     </p>
                   </div>
                 </div>
@@ -3120,11 +3121,11 @@ export default function GameContainer() {
               {adminTab === 'deposits' && (
               <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
                 <div className="p-4 border-b border-stone-100 bg-stone-50/50">
-                  <h3 className="font-serif italic font-bold">Depósitos Pendentes</h3>
+                  <h3 className="font-serif italic font-bold">Pending Deposits</h3>
                 </div>
                 <div className="p-6 space-y-4">
                   {depositRequests.filter(r => r.status === 'pending').length === 0 ? (
-                    <p className="text-sm text-stone-400 italic">Nenhuma solicitação pendente.</p>
+                    <p className="text-sm text-stone-400 italic">No pending requests.</p>
                   ) : (
                     depositRequests.filter(r => r.status === 'pending').map(req => (
                       <div key={req.id} className="bg-stone-50 p-4 rounded-2xl border border-stone-100 space-y-2">
@@ -3132,7 +3133,7 @@ export default function GameContainer() {
                           <p className="font-bold text-sm">Usuário: {req.userId}</p>
                           <p className="font-bold text-sm">{req.amountKZ.toLocaleString()} KZ</p>
                         </div>
-                        <p className="text-xs text-stone-600">Detalhes: {req.details}</p>
+                        <p className="text-xs text-stone-600">Details: {req.details}</p>
                         <div className="flex gap-2 pt-2">
                           <button 
                             onClick={async () => {
@@ -3144,18 +3145,18 @@ export default function GameContainer() {
                               
                               const notifRef = push(ref(rtdb, `notifications/${req.userId}`));
                               updates[`notifications/${req.userId}/${notifRef.key}`] = {
-                                message: `Seu depósito de ${req.amountKZ.toLocaleString()} KZ foi aprovado!`,
+                                message: `Your deposit of ${req.amountKZ.toLocaleString()} KZ has been approved!`,
                                 type: 'success',
                                 timestamp: Date.now()
                               };
 
                               update(ref(rtdb), updates)
-                                .then(() => addNotification('Depósito aprovado com sucesso!', 'success'))
+                                .then(() => addNotification('Deposit approved successfully!', 'success'))
                                 .catch(err => handleRtdbError(err, OperationType.WRITE, `depositRequests`));
                             }}
                             className="flex-1 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700"
                           >
-                            Aprovar
+                            Approve
                           </button>
                           <button 
                             onClick={async () => {
@@ -3165,18 +3166,18 @@ export default function GameContainer() {
                               
                               const notifRef = push(ref(rtdb, `notifications/${req.userId}`));
                               updates[`notifications/${req.userId}/${notifRef.key}`] = {
-                                message: `Seu depósito de ${req.amountKZ.toLocaleString()} KZ foi rejeitado.`,
+                                message: `Your deposit of ${req.amountKZ.toLocaleString()} KZ has been rejected.`,
                                 type: 'error',
                                 timestamp: Date.now()
                               };
 
                               update(ref(rtdb), updates)
-                                .then(() => addNotification('Depósito rejeitado com sucesso!', 'success'))
+                                .then(() => addNotification('Deposit rejected successfully!', 'success'))
                                 .catch(err => handleRtdbError(err, OperationType.WRITE, `depositRequests`));
                             }}
                             className="flex-1 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700"
                           >
-                            Rejeitar
+                            Reject
                           </button>
                         </div>
                       </div>
@@ -3190,11 +3191,11 @@ export default function GameContainer() {
               {adminTab === 'withdrawals' && (
               <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
                 <div className="p-4 border-b border-stone-100 bg-stone-50/50">
-                  <h3 className="font-serif italic font-bold">Saques Pendentes</h3>
+                  <h3 className="font-serif italic font-bold">Pending Withdrawals</h3>
                 </div>
                 <div className="p-6 space-y-4">
                   {withdrawalRequests.filter(r => r.status === 'pending').length === 0 ? (
-                    <p className="text-sm text-stone-400 italic">Nenhuma solicitação pendente.</p>
+                    <p className="text-sm text-stone-400 italic">No pending requests.</p>
                   ) : (
                     withdrawalRequests.filter(r => r.status === 'pending').map(req => (
                       <div key={req.id} className="bg-stone-50 p-4 rounded-2xl border border-stone-100 space-y-2">
@@ -3202,8 +3203,8 @@ export default function GameContainer() {
                           <p className="font-bold text-sm">Usuário: {req.userId}</p>
                           <p className="font-bold text-sm">{req.amountKZ.toLocaleString()} KZ</p>
                         </div>
-                        <p className="text-xs text-stone-600">Método: {req.method}</p>
-                        <p className="text-xs text-stone-600">Detalhes: {req.details}</p>
+                        <p className="text-xs text-stone-600">Method: {req.method}</p>
+                        <p className="text-xs text-stone-600">Details: {req.details}</p>
                         <div className="flex gap-2 pt-2">
                           <button 
                             onClick={async () => {
@@ -3213,17 +3214,17 @@ export default function GameContainer() {
                               updates[`globalConfig/system/playerDepositsMinusWithdrawals`] = rtdbIncrement(-req.amountKZ);
                               const notifRef = push(ref(rtdb, `notifications/${req.userId}`));
                               updates[`notifications/${req.userId}/${notifRef.key}`] = {
-                                message: `Seu saque de ${req.amountKZ.toLocaleString()} KZ foi aprovado!`,
+                                message: `Your withdrawal of ${req.amountKZ.toLocaleString()} KZ has been approved!`,
                                 type: 'success',
                                 timestamp: Date.now()
                               };
                               update(ref(rtdb), updates)
-                                .then(() => addNotification('Saque aprovado com sucesso!', 'success'))
+                                .then(() => addNotification('Withdrawal approved successfully!', 'success'))
                                 .catch(err => handleRtdbError(err, OperationType.WRITE, `withdrawalRequests`));
                             }}
                             className="flex-1 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700"
                           >
-                            Aprovar
+                            Approve
                           </button>
                           <button 
                             onClick={async () => {
@@ -3233,17 +3234,17 @@ export default function GameContainer() {
                               updates[`users/${req.userId}/balanceKZ`] = rtdbIncrement(req.amountKZ); // Refund to user
                               const notifRef = push(ref(rtdb, `notifications/${req.userId}`));
                               updates[`notifications/${req.userId}/${notifRef.key}`] = {
-                                message: `Seu saque de ${req.amountKZ.toLocaleString()} KZ foi rejeitado e o valor foi reembolsado.`,
+                                message: `Your withdrawal of ${req.amountKZ.toLocaleString()} KZ has been rejected and the amount was refunded.`,
                                 type: 'error',
                                 timestamp: Date.now()
                               };
                               update(ref(rtdb), updates)
-                                .then(() => addNotification('Saque rejeitado com sucesso!', 'success'))
+                                .then(() => addNotification('Withdrawal rejected successfully!', 'success'))
                                 .catch(err => handleRtdbError(err, OperationType.WRITE, `withdrawalRequests`));
                             }}
                             className="flex-1 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700"
                           >
-                            Rejeitar
+                            Reject
                           </button>
                         </div>
                       </div>
@@ -3257,12 +3258,12 @@ export default function GameContainer() {
               {adminTab === 'settings' && (
               <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
                 <div className="p-4 border-b border-stone-100 bg-stone-50/50">
-                  <h3 className="font-serif italic font-bold">Configurações Globais</h3>
+                  <h3 className="font-serif italic font-bold">Global Settings</h3>
                 </div>
                 <div className="p-6 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400">Taxa do Sistema (%)</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400">System Tax (%)</label>
                       <input 
                         type="number"
                         value={gameConfig?.systemTax || 10}
@@ -3274,7 +3275,7 @@ export default function GameContainer() {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400">XP por Colheita</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400">XP per Harvest</label>
                       <input 
                         type="number"
                         value={gameConfig?.xpPerHarvest || 10}
@@ -3286,7 +3287,7 @@ export default function GameContainer() {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400">Balanço Inicial (KZ)</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400">Starting Balance (KZ)</label>
                       <input 
                         type="number"
                         value={gameConfig?.startingBalance || 1000}
@@ -3298,7 +3299,7 @@ export default function GameContainer() {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400">Preço do Slot (KZ)</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400">Slot Price (KZ)</label>
                       <input 
                         type="number"
                         value={gameConfig?.slotPrice || 5000}
@@ -3310,7 +3311,7 @@ export default function GameContainer() {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400">Taxa de Produção (KZ)</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400">Production Tax (KZ)</label>
                       <input 
                         type="number"
                         value={gameConfig?.productionTaxKZ || 0}
@@ -3324,7 +3325,7 @@ export default function GameContainer() {
                   </div>
                   
                   <div className="space-y-3">
-                    <p className="text-[10px] font-bold uppercase text-stone-400 tracking-widest">Produtos Iniciais</p>
+                    <p className="text-[10px] font-bold uppercase text-stone-400 tracking-widest">Initial Products</p>
                     <div className="grid grid-cols-2 gap-2">
                       {Object.entries(currentCommodities).map(([id, data]: [string, any]) => (
                         <div key={id} className="flex items-center gap-2 bg-stone-50 p-2 rounded-xl border border-stone-100">
@@ -3375,12 +3376,12 @@ export default function GameContainer() {
               {adminTab === 'commodities' && (
               <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
                 <div className="p-4 border-b border-stone-100 bg-stone-50/50 flex justify-between items-center">
-                  <h3 className="font-serif italic font-bold">Gestão de Itens e Preços</h3>
+                  <h3 className="font-serif italic font-bold">Manage Items and Prices</h3>
                   <button 
                     onClick={() => setAdminEditingItem({ id: '', name: '', type: 'seed', category: 'semente', price: 10, product: '', consumes: '', basePrice: 0, growthTime: 60, lifespan: 5, isNew: true })}
                     className="p-2 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-all flex items-center gap-2 text-xs font-bold"
                   >
-                    <PlusCircle className="w-4 h-4" /> Novo Item
+                    <PlusCircle className="w-4 h-4" /> New Item
                   </button>
                 </div>
                 <div className="divide-y divide-stone-100">
@@ -3396,8 +3397,8 @@ export default function GameContainer() {
                           <h4 className="font-bold text-sm">{data.name}</h4>
                           <p className="text-[10px] text-stone-400 uppercase tracking-widest">
                             {data.type === 'seed' || data.type === 'animal' ? 
-                              `Preço: ${data.price} KZ · Gera: ${data.product}` :
-                              `Base: ${data.basePrice} KZ · Crescimento: ${data.growthTime}s`}
+                              `Price: ${data.price} KZ · Generates: ${data.product}` :
+                              `Base: ${data.basePrice} KZ · Growth: ${data.growthTime}s`}
                           </p>
                         </div>
                       </div>
@@ -3449,7 +3450,7 @@ export default function GameContainer() {
               {adminTab === 'users' && (
               <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
                 <div className="p-4 border-b border-stone-100 bg-stone-50/50">
-                  <h3 className="font-serif italic font-bold">Pesquisar Utilizadores</h3>
+                  <h3 className="font-serif italic font-bold">Search Users</h3>
                 </div>
                 <div className="p-4 space-y-4">
                   <div className="flex gap-2">
@@ -3476,7 +3477,7 @@ export default function GameContainer() {
                           <p className="text-[10px] text-stone-400">{u.email} · {u.balanceKZ?.toLocaleString()} KZ · Nível {u.level || 1}</p>
                         </div>
                         <div className="flex gap-2">
-                          <button 
+                      <button 
                             onClick={() => {
                               setAdminActionUser(u);
                               setAdminActionType('give_item');
@@ -3484,7 +3485,7 @@ export default function GameContainer() {
                               setAdminActionValue(10);
                             }}
                             className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-                            title="Dar Itens"
+                            title="Give Items"
                           >
                             <Package className="w-4 h-4" />
                           </button>
@@ -3495,7 +3496,7 @@ export default function GameContainer() {
                               setAdminActionValue(1000);
                             }}
                             className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
-                            title="Dar Saldo"
+                            title="Give Balance"
                           >
                             <Wallet className="w-4 h-4" />
                           </button>
@@ -3505,7 +3506,7 @@ export default function GameContainer() {
                               u.banned ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
                             }`}
                           >
-                            {u.banned ? 'Desbanir' : 'Banir'}
+                            {u.banned ? 'Unban' : 'Ban'}
                           </button>
                         </div>
                       </div>
@@ -3519,12 +3520,12 @@ export default function GameContainer() {
               {adminTab === 'levels' && (
               <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
                 <div className="p-4 border-b border-stone-100 bg-stone-50/50 flex justify-between items-center">
-                  <h3 className="font-serif italic font-bold">Gestão de Níveis</h3>
+                  <h3 className="font-serif italic font-bold">Level Management</h3>
                   <button 
                     onClick={() => setAdminEditingLevel({ level: (levelsConfig.length + 1), xpRequired: 0, rewardKZ: 0, isNew: true })}
                     className="p-2 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-all flex items-center gap-2 text-xs font-bold"
                   >
-                    <PlusCircle className="w-4 h-4" /> Novo Nível
+                    <PlusCircle className="w-4 h-4" /> New Level
                   </button>
                 </div>
                 <div className="divide-y divide-stone-100">
@@ -3535,8 +3536,8 @@ export default function GameContainer() {
                           <Sparkles className="w-5 h-5 text-amber-600" />
                         </div>
                         <div>
-                          <h4 className="font-bold text-sm">Nível {l.level}</h4>
-                          <p className="text-[10px] text-stone-400 uppercase tracking-widest">XP: {l.xpRequired} · Prémio: {l.rewardKZ} KZ</p>
+                          <h4 className="font-bold text-sm">Level {l.level}</h4>
+                          <p className="text-[10px] text-stone-400 uppercase tracking-widest">XP: {l.xpRequired} · Reward: {l.rewardKZ} KZ</p>
                         </div>
                       </div>
                       <div className="flex gap-2">
@@ -3563,12 +3564,12 @@ export default function GameContainer() {
               {adminTab === 'recipes' && (
               <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden">
                 <div className="p-4 border-b border-stone-100 bg-stone-50/50 flex justify-between items-center">
-                  <h3 className="font-serif italic font-bold">Gestão de Receitas (Produção)</h3>
+                  <h3 className="font-serif italic font-bold">Manage Recipes (Production)</h3>
                   <button 
                     onClick={() => setAdminEditingRecipe({ id: '', name: '', inputs: [{ itemId: '', quantity: 1 }], output: { itemId: '', quantity: 1 }, duration: 60, isNew: true })}
                     className="p-2 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-all flex items-center gap-2 text-xs font-bold"
                   >
-                    <PlusCircle className="w-4 h-4" /> Nova Receita
+                    <PlusCircle className="w-4 h-4" /> New Recipe
                   </button>
                 </div>
                 <div className="divide-y divide-stone-100">
@@ -3581,7 +3582,7 @@ export default function GameContainer() {
                         <div>
                           <h4 className="font-bold text-sm">{data.name}</h4>
                           <p className="text-[10px] text-stone-400 uppercase tracking-widest">
-                            Duração: {data.duration}s · Entradas: {data.inputs.length}
+                            Duration: {data.duration}s · Inputs: {data.inputs.length}
                           </p>
                         </div>
                       </div>
@@ -3595,8 +3596,8 @@ export default function GameContainer() {
                         <button 
                           onClick={() => {
                             askConfirmation(
-                              'Excluir Receita',
-                              `Tem certeza que deseja excluir a receita ${data.name}?`,
+                              'Delete Recipe',
+                              `Are you sure you want to delete the recipe ${data.name}?`,
                               () => adminDeleteRecipe(id)
                             );
                           }}
@@ -3651,24 +3652,24 @@ export default function GameContainer() {
             >
               <div className="p-6 space-y-4 overflow-y-auto no-scrollbar">
                 <h3 className="font-serif italic text-xl font-bold">
-                  {adminEditingItem.isNew ? 'Adicionar Novo Item' : `Editar ${adminEditingItem.name}`}
+                  {adminEditingItem.isNew ? 'Add New Item' : `Edit ${adminEditingItem.name}`}
                 </h3>
                 
                 <div className="space-y-3">
                   {adminEditingItem.isNew && (
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400">ID do Item (slug)</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400">Item ID (slug)</label>
                       <input 
                         type="text"
                         value={adminEditingItem.id}
                         onChange={(e) => setAdminEditingItem({ ...adminEditingItem, id: e.target.value })}
                         className="w-full bg-stone-100 p-3 rounded-xl outline-none"
-                        placeholder="ex: algodao"
+                        placeholder="ex: cotton"
                       />
                     </div>
                   )}
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400">Ícone (Emoji)</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400">Icon (Emoji)</label>
                     <div className="grid grid-cols-8 gap-1 mt-1 max-h-32 overflow-y-auto p-2 bg-stone-50 rounded-xl border border-stone-100">
                       {[...AVAILABLE_ICONS.animals, ...AVAILABLE_ICONS.crops, ...AVAILABLE_ICONS.special].map(emoji => (
                         <button 
@@ -3685,12 +3686,12 @@ export default function GameContainer() {
                       value={adminEditingItem.icon || ''}
                       onChange={(e) => setAdminEditingItem({ ...adminEditingItem, icon: e.target.value })}
                       className="w-full mt-2 bg-stone-100 p-3 rounded-xl outline-none text-center text-xl"
-                      placeholder="Ou cole um emoji aqui"
+                      placeholder="Or paste an emoji here"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400">Nome do Item</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400">Item Name</label>
                     <input 
                       type="text"
                       value={adminEditingItem.name}
@@ -3699,21 +3700,21 @@ export default function GameContainer() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400">Categoria</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400">Category</label>
                     <select 
                       value={adminEditingItem.category || 'agricola'}
                       onChange={(e) => setAdminEditingItem({ ...adminEditingItem, category: e.target.value })}
                       className="w-full bg-stone-100 p-3 rounded-xl outline-none"
                     >
-                      <option value="agricola">Agrícola</option>
-                      <option value="pecuaria">Pecuária</option>
+                      <option value="agricola">Agricultural</option>
+                      <option value="pecuaria">Livestock</option>
                       <option value="industrial">Industrial</option>
-                      <option value="semente">Semente</option>
+                      <option value="semente">Seed</option>
                       <option value="animal">Animal</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400">Tipo de Item</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400">Item Type</label>
                     <select 
                       value={adminEditingItem.type || 'seed'}
                       onChange={(e) => {
@@ -3726,32 +3727,32 @@ export default function GameContainer() {
                       }}
                       className="w-full bg-stone-100 p-3 rounded-xl outline-none"
                     >
-                      <option value="seed">Semente</option>
+                      <option value="seed">Seed</option>
                       <option value="animal">Animal</option>
-                      <option value="crop">Cultivo (Crop)</option>
-                      <option value="product">Produto (Colheita)</option>
-                      <option value="processed">Processado</option>
+                      <option value="crop">Crop</option>
+                      <option value="product">Product (Harvest)</option>
+                      <option value="processed">Processed</option>
                     </select>
                   </div>
                   
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400">Raridade</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400">Rarity</label>
                     <select 
                       value={adminEditingItem.rarity || 'common'}
                       onChange={(e) => setAdminEditingItem({ ...adminEditingItem, rarity: e.target.value })}
                       className="w-full bg-stone-100 p-3 rounded-xl outline-none"
                     >
-                      <option value="common">Comum</option>
-                      <option value="uncommon">Incomum</option>
-                      <option value="rare">Raro</option>
-                      <option value="legendary">Lendário</option>
+                      <option value="common">Common</option>
+                      <option value="uncommon">Uncommon</option>
+                      <option value="rare">Rare</option>
+                      <option value="legendary">Legendary</option>
                     </select>
                   </div>
 
                   {(adminEditingItem.type === 'seed' || adminEditingItem.type === 'animal') ? (
                     <>
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-stone-400">Preço de Compra (Loja) (KZ)</label>
+                        <label className="text-[10px] font-bold uppercase text-stone-400">Purchase Price (Shop) (KZ)</label>
                         <input 
                           type="number"
                           value={adminEditingItem.price || 0}
@@ -3760,13 +3761,13 @@ export default function GameContainer() {
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-stone-400">ID do Produto Gerado</label>
+                        <label className="text-[10px] font-bold uppercase text-stone-400">Generated Product ID</label>
                         <select 
                           value={adminEditingItem.product || ''}
                           onChange={(e) => setAdminEditingItem({ ...adminEditingItem, product: e.target.value })}
                           className="w-full bg-stone-100 p-3 rounded-xl outline-none"
                         >
-                          <option value="">Selecionar Produto...</option>
+                          <option value="">Select Product...</option>
                           {Object.entries(currentCommodities)
                             .filter(([_, d]: [string, any]) => d.type !== 'seed' && d.type !== 'animal')
                             .map(([id, d]: [string, any]) => (
@@ -3778,13 +3779,13 @@ export default function GameContainer() {
                       {adminEditingItem.type === 'animal' && (
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="text-[10px] font-bold uppercase text-stone-400">Consome (Alimento)</label>
+                            <label className="text-[10px] font-bold uppercase text-stone-400">Consumes (Food)</label>
                             <select 
                               value={adminEditingItem.consumes || ''}
                               onChange={(e) => setAdminEditingItem({ ...adminEditingItem, consumes: e.target.value })}
                               className="w-full bg-stone-100 p-3 rounded-xl outline-none"
                             >
-                              <option value="">Selecionar Alimento...</option>
+                              <option value="">Select Food...</option>
                               {Object.entries(currentCommodities)
                                 .filter(([_, d]: [string, any]) => d.type === 'processed' || d.type === 'crop')
                                 .map(([id, d]: [string, any]) => (
@@ -3794,7 +3795,7 @@ export default function GameContainer() {
                             </select>
                           </div>
                           <div>
-                            <label className="text-[10px] font-bold uppercase text-stone-400">Tempo de Vida (Colheitas)</label>
+                            <label className="text-[10px] font-bold uppercase text-stone-400">Lifespan (Harvests)</label>
                             <input 
                               type="number"
                               value={adminEditingItem.lifespan || 5}
@@ -3809,7 +3810,7 @@ export default function GameContainer() {
                     <>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-[10px] font-bold uppercase text-stone-400">Preço Base (Bolsa) (KZ)</label>
+                          <label className="text-[10px] font-bold uppercase text-stone-400">Base Price (Market) (KZ)</label>
                           <input 
                             type="number"
                             value={adminEditingItem.basePrice || 0}
@@ -3818,7 +3819,7 @@ export default function GameContainer() {
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold uppercase text-stone-400">Tempo (s)</label>
+                          <label className="text-[10px] font-bold uppercase text-stone-400">Time (s)</label>
                           <input 
                             type="number"
                             value={adminEditingItem.growthTime || 0}
@@ -3829,7 +3830,7 @@ export default function GameContainer() {
                       </div>
                       {adminEditingItem.type === 'product' && (
                         <div>
-                          <label className="text-[10px] font-bold uppercase text-stone-400">Chance de Drop de Semente (0-1)</label>
+                          <label className="text-[10px] font-bold uppercase text-stone-400">Seed Drop Chance (0-1)</label>
                           <input 
                             type="number"
                             step="0.05"
@@ -3850,14 +3851,14 @@ export default function GameContainer() {
                     onClick={() => setAdminEditingItem(null)}
                     className="flex-1 py-3 bg-stone-100 text-stone-600 rounded-xl font-bold"
                   >
-                    Cancelar
+                    Cancel
                   </button>
                   {!adminEditingItem.isNew && (
                     <button 
                       onClick={() => adminDeleteCommodity(adminEditingItem.id)}
                       className="px-4 py-3 bg-rose-100 text-rose-600 rounded-xl font-bold"
                     >
-                      Apagar
+                      Delete
                     </button>
                   )}
                   <button 
@@ -3881,7 +3882,7 @@ export default function GameContainer() {
                     }}
                     className="flex-1 py-3 bg-stone-900 text-white rounded-xl font-bold"
                   >
-                    Salvar
+                    Save
                   </button>
                 </div>
               </div>
@@ -3909,12 +3910,12 @@ export default function GameContainer() {
             >
               <div className="p-6 space-y-4 overflow-y-auto no-scrollbar">
                 <h3 className="font-serif italic text-xl font-bold">
-                  {adminEditingLevel.isNew ? 'Adicionar Novo Nível' : `Editar Nível ${adminEditingLevel.level}`}
+                  {adminEditingLevel.isNew ? 'Add New Level' : `Edit Level ${adminEditingLevel.level}`}
                 </h3>
                 
                 <div className="space-y-3">
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400">Nível</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400">Level</label>
                     <input 
                       type="number"
                       value={adminEditingLevel.level}
@@ -3924,7 +3925,7 @@ export default function GameContainer() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400">XP Necessário</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400">Required XP</label>
                     <input 
                       type="number"
                       value={adminEditingLevel.xpRequired}
@@ -3933,7 +3934,7 @@ export default function GameContainer() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400">Prémio ao Atingir (KZ)</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400">Reward on Reaching (KZ)</label>
                     <input 
                       type="number"
                       value={adminEditingLevel.rewardKZ}
@@ -3948,7 +3949,7 @@ export default function GameContainer() {
                     onClick={() => setAdminEditingLevel(null)}
                     className="flex-1 py-3 bg-stone-100 text-stone-600 rounded-xl font-bold"
                   >
-                    Cancelar
+                    Cancel
                   </button>
                   <button 
                     onClick={() => {
@@ -3960,7 +3961,7 @@ export default function GameContainer() {
                     }}
                     className="flex-1 py-3 bg-stone-900 text-white rounded-xl font-bold"
                   >
-                    Salvar
+                    Save
                   </button>
                 </div>
               </div>
@@ -3988,13 +3989,13 @@ export default function GameContainer() {
             >
               <div className="p-6 space-y-4 overflow-y-auto no-scrollbar">
                 <h3 className="font-serif italic text-xl font-bold">
-                  {adminActionType === 'give_item' ? `Dar Itens para ${adminActionUser.name}` : `Dar Saldo para ${adminActionUser.name}`}
+                  {adminActionType === 'give_item' ? `Give Items to ${adminActionUser.name}` : `Give Balance to ${adminActionUser.name}`}
                 </h3>
                 
                 <div className="space-y-3">
                   {adminActionType === 'give_item' && (
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400">Selecionar Item</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400">Select Item</label>
                       <select 
                         value={adminActionItemId}
                         onChange={(e) => setAdminActionItemId(e.target.value)}
@@ -4008,7 +4009,7 @@ export default function GameContainer() {
                   )}
                   <div>
                     <label className="text-[10px] font-bold uppercase text-stone-400">
-                      {adminActionType === 'give_item' ? 'Quantidade' : 'Valor (KZ)'}
+                      {adminActionType === 'give_item' ? 'Quantity' : 'Value (KZ)'}
                     </label>
                     <input 
                       type="number"
@@ -4024,7 +4025,7 @@ export default function GameContainer() {
                     onClick={() => setAdminActionUser(null)}
                     className="flex-1 py-3 bg-stone-100 text-stone-600 rounded-xl font-bold"
                   >
-                    Cancelar
+                    Cancel
                   </button>
                   <button 
                     onClick={() => {
@@ -4036,7 +4037,7 @@ export default function GameContainer() {
                     }}
                     className="flex-1 py-3 bg-stone-900 text-white rounded-xl font-bold"
                   >
-                    Confirmar
+                    Confirm
                   </button>
                 </div>
               </div>
@@ -4063,67 +4064,67 @@ export default function GameContainer() {
             >
               <div className="p-6 space-y-4 overflow-y-auto no-scrollbar">
                 <h3 className="font-serif italic text-xl font-bold">
-                  {adminEditingMission.isNew ? 'Criar Nova Missão' : 'Editar Missão'}
+                  {adminEditingMission.isNew ? 'Create New Mission' : 'Edit Mission'}
                 </h3>
                 
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400">Título</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400">Title</label>
                       <input 
                         type="text"
                         value={adminEditingMission.title}
                         onChange={(e) => setAdminEditingMission({ ...adminEditingMission, title: e.target.value })}
                         className="w-full bg-stone-100 p-3 rounded-xl outline-none"
-                        placeholder="Ex: Colheita de Milho"
+                        placeholder="Ex: Corn Harvest"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400">Período</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400">Period</label>
                       <select 
                         value={adminEditingMission.period}
                         onChange={(e) => setAdminEditingMission({ ...adminEditingMission, period: e.target.value })}
                         className="w-full bg-stone-100 p-3 rounded-xl outline-none"
                       >
-                        <option value="daily">Diária</option>
-                        <option value="weekly">Semanal</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
                       </select>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400">Descrição</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400">Description</label>
                     <textarea 
                       value={adminEditingMission.description}
                       onChange={(e) => setAdminEditingMission({ ...adminEditingMission, description: e.target.value })}
                       className="w-full bg-stone-100 p-3 rounded-xl outline-none h-20 resize-none"
-                      placeholder="Descrição da missão..."
+                      placeholder="Mission description..."
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400">Tipo de Objetivo</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400">Objective Type</label>
                       <select 
                         value={adminEditingMission.type}
                         onChange={(e) => setAdminEditingMission({ ...adminEditingMission, type: e.target.value })}
                         className="w-full bg-stone-100 p-3 rounded-xl outline-none"
                       >
-                        <option value="harvest">Colher</option>
-                        <option value="produce">Produzir</option>
-                        <option value="sell">Vender</option>
-                        <option value="buy">Comprar</option>
-                        <option value="delivery">Entregar (Queimar)</option>
+                        <option value="harvest">Harvest</option>
+                        <option value="produce">Produce</option>
+                        <option value="sell">Sell</option>
+                        <option value="buy">Buy</option>
+                        <option value="delivery">Deliver (Burn)</option>
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400">Item Alvo</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400">Target Item</label>
                       <select 
                         value={adminEditingMission.targetItemId}
                         onChange={(e) => setAdminEditingMission({ ...adminEditingMission, targetItemId: e.target.value })}
                         className="w-full bg-stone-100 p-3 rounded-xl outline-none"
                       >
-                        <option value="">Qualquer Item</option>
+                        <option value="">Any Item</option>
                         {Object.entries(currentCommodities).map(([id, d]: [string, any]) => (
                           <option key={id} value={id}>{d.name}</option>
                         ))}
@@ -4133,7 +4134,7 @@ export default function GameContainer() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400">Quantidade Alvo</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400">Target Quantity</label>
                       <input 
                         type="number"
                         value={adminEditingMission.targetQuantity}
@@ -4142,7 +4143,7 @@ export default function GameContainer() {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400">Ícone (Emoji)</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400">Icon (Emoji)</label>
                       <input 
                         type="text"
                         value={adminEditingMission.icon}
@@ -4153,10 +4154,10 @@ export default function GameContainer() {
                   </div>
 
                   <div className="p-4 bg-stone-50 rounded-2xl border border-stone-100 space-y-3">
-                    <p className="text-[10px] font-bold uppercase text-stone-400 border-b border-stone-200 pb-1">Recompensas</p>
+                    <p className="text-[10px] font-bold uppercase text-stone-400 border-b border-stone-200 pb-1">Rewards</p>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-stone-400">Saldo (KZ)</label>
+                        <label className="text-[10px] font-bold uppercase text-stone-400">Balance (KZ)</label>
                         <input 
                           type="number"
                           value={adminEditingMission.rewardKZ}
@@ -4165,13 +4166,13 @@ export default function GameContainer() {
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-stone-400">Item Prémio</label>
+                        <label className="text-[10px] font-bold uppercase text-stone-400">Reward Item</label>
                         <select 
                           value={adminEditingMission.rewardItemId}
                           onChange={(e) => setAdminEditingMission({ ...adminEditingMission, rewardItemId: e.target.value })}
                           className="w-full bg-white p-2 rounded-lg border border-stone-200 outline-none"
                         >
-                          <option value="">Nenhum</option>
+                          <option value="">None</option>
                           {Object.entries(currentCommodities).map(([id, d]: [string, any]) => (
                             <option key={id} value={id}>{d.name}</option>
                           ))}
@@ -4180,7 +4181,7 @@ export default function GameContainer() {
                     </div>
                     {adminEditingMission.rewardItemId && (
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-stone-400">Qtd. Item Prémio</label>
+                        <label className="text-[10px] font-bold uppercase text-stone-400">Reward Item Qty</label>
                         <input 
                           type="number"
                           value={adminEditingMission.rewardItemQuantity}
@@ -4197,13 +4198,13 @@ export default function GameContainer() {
                     onClick={() => setAdminEditingMission(null)}
                     className="flex-1 py-3 bg-stone-100 text-stone-600 rounded-xl font-bold"
                   >
-                    Cancelar
+                    Cancel
                   </button>
                   <button 
                     onClick={() => adminAddMission(adminEditingMission.id, adminEditingMission)}
                     className="flex-1 py-3 bg-stone-900 text-white rounded-xl font-bold"
                   >
-                    Salvar Missão
+                    Save Mission
                   </button>
                 </div>
               </div>
@@ -4230,13 +4231,13 @@ export default function GameContainer() {
             >
               <div className="p-6 space-y-4 overflow-y-auto no-scrollbar">
                 <h3 className="font-serif italic text-xl font-bold">
-                  {adminEditingRecipe.isNew ? 'Adicionar Nova Receita' : `Editar ${adminEditingRecipe.name}`}
+                  {adminEditingRecipe.isNew ? 'Add New Recipe' : `Edit ${adminEditingRecipe.name}`}
                 </h3>
                 
                 <div className="space-y-4">
                   {adminEditingRecipe.isNew && (
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400">ID da Receita (slug)</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400">Recipe ID (slug)</label>
                       <input 
                         type="text"
                         value={adminEditingRecipe.id}
@@ -4247,7 +4248,7 @@ export default function GameContainer() {
                     </div>
                   )}
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400">Nome da Receita</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400">Recipe Name</label>
                     <input 
                       type="text"
                       value={adminEditingRecipe.name}
@@ -4257,7 +4258,7 @@ export default function GameContainer() {
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400">Ícone (Emoji)</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400">Icon (Emoji)</label>
                     <div className="grid grid-cols-8 gap-1 mt-1 max-h-32 overflow-y-auto p-2 bg-stone-50 rounded-xl border border-stone-100">
                       {[...AVAILABLE_ICONS.animals, ...AVAILABLE_ICONS.crops, ...AVAILABLE_ICONS.special].map(emoji => (
                         <button 
@@ -4274,13 +4275,13 @@ export default function GameContainer() {
                       value={adminEditingRecipe.icon || ''}
                       onChange={(e) => setAdminEditingRecipe({ ...adminEditingRecipe, icon: e.target.value })}
                       className="w-full mt-2 bg-stone-100 p-3 rounded-xl outline-none text-center text-xl"
-                      placeholder="Ou cole um emoji aqui"
+                      placeholder="Or paste an emoji here"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold uppercase text-stone-400">Ingredientes (Inputs)</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400">Ingredients (Inputs)</label>
                       <button 
                         onClick={() => setAdminEditingRecipe({ 
                           ...adminEditingRecipe, 
@@ -4288,7 +4289,7 @@ export default function GameContainer() {
                         })}
                         className="text-[10px] bg-stone-900 text-white px-2 py-1 rounded-lg font-bold"
                       >
-                        + Adicionar
+                        + Add
                       </button>
                     </div>
                     {adminEditingRecipe.inputs.map((input: any, idx: number) => (
@@ -4331,7 +4332,7 @@ export default function GameContainer() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase text-stone-400">Resultado (Output)</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400">Result (Output)</label>
                     <div className="flex gap-2 items-center">
                       <select 
                         value={adminEditingRecipe.output.itemId}
@@ -4359,7 +4360,7 @@ export default function GameContainer() {
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400">Duração da Produção (segundos)</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400">Production Duration (seconds)</label>
                     <input 
                       type="number"
                       value={adminEditingRecipe.duration}
@@ -4374,12 +4375,12 @@ export default function GameContainer() {
                     onClick={() => setAdminEditingRecipe(null)}
                     className="flex-1 py-3 bg-stone-100 text-stone-600 rounded-xl font-bold"
                   >
-                    Cancelar
+                    Cancel
                   </button>
                   <button 
                     onClick={() => {
                       if (!adminEditingRecipe.id || !adminEditingRecipe.name) {
-                        addNotification('ID e Nome são obrigatórios!', 'error');
+                        addNotification('ID and Name are required!', 'error');
                         return;
                       }
                       if (adminEditingRecipe.isNew) {
@@ -4399,7 +4400,7 @@ export default function GameContainer() {
                     }}
                     className="flex-1 py-3 bg-stone-900 text-white rounded-xl font-bold"
                   >
-                    Salvar
+                    Save
                   </button>
                 </div>
               </div>
@@ -4423,7 +4424,7 @@ export default function GameContainer() {
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
                     <span className="text-3xl">{adminEditingWeatherEffect.icon}</span>
-                    <h3 className="font-serif italic text-2xl font-bold text-stone-900">Editar {adminEditingWeatherEffect.name}</h3>
+                    <h3 className="font-serif italic text-2xl font-bold text-stone-900">Edit {adminEditingWeatherEffect.name}</h3>
                   </div>
                   <button onClick={() => setAdminEditingWeatherEffect(null)} className="p-2 bg-stone-100 rounded-full text-stone-400 hover:text-stone-600 transition-colors">
                     <X className="w-5 h-5" />
@@ -4432,7 +4433,7 @@ export default function GameContainer() {
 
                 <div className="space-y-6">
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Descrição do Clima</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Weather Description</label>
                     <textarea 
                       value={adminEditingWeatherEffect.description}
                       onChange={(e) => setAdminEditingWeatherEffect({ ...adminEditingWeatherEffect, description: e.target.value })}
@@ -4442,7 +4443,7 @@ export default function GameContainer() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Mult. Crescimento</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Growth Mult.</label>
                       <input 
                         type="number"
                         step="0.1"
@@ -4450,10 +4451,10 @@ export default function GameContainer() {
                         onChange={(e) => setAdminEditingWeatherEffect({ ...adminEditingWeatherEffect, growthMultiplier: Number(e.target.value) })}
                         className="w-full bg-stone-50 border border-stone-100 p-4 rounded-2xl outline-none text-sm focus:border-stone-300 transition-all font-mono font-bold"
                       />
-                      <p className="text-[8px] text-stone-400 mt-1 uppercase tracking-widest">1.0 = Normal | &gt;1.0 = Mais rápido</p>
+                      <p className="text-[8px] text-stone-400 mt-1 uppercase tracking-widest">1.0 = Normal | &gt;1.0 = Faster</p>
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Mult. Produção</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Production Mult.</label>
                       <input 
                         type="number"
                         step="0.1"
@@ -4461,22 +4462,22 @@ export default function GameContainer() {
                         onChange={(e) => setAdminEditingWeatherEffect({ ...adminEditingWeatherEffect, yieldMultiplier: Number(e.target.value) })}
                         className="w-full bg-stone-50 border border-stone-100 p-4 rounded-2xl outline-none text-sm focus:border-stone-300 transition-all font-mono font-bold"
                       />
-                      <p className="text-[8px] text-stone-400 mt-1 uppercase tracking-widest">1.0 = Normal | &lt;1.0 = Menor yield</p>
+                      <p className="text-[8px] text-stone-400 mt-1 uppercase tracking-widest">1.0 = Normal | &lt;1.0 = Lower yield</p>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Categoria com Bônus (Opcional)</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Bonus Category (Optional)</label>
                     <select
                       value={adminEditingWeatherEffect.bonusCategory || ''}
                       onChange={(e) => setAdminEditingWeatherEffect({ ...adminEditingWeatherEffect, bonusCategory: e.target.value || undefined })}
                       className="w-full bg-stone-50 border border-stone-100 p-4 rounded-2xl outline-none text-sm focus:border-stone-300 transition-all"
                     >
-                      <option value="">Nenhuma</option>
-                      <option value="coffee">Café</option>
-                      <option value="cotton">Algodão</option>
-                      <option value="agricola">Agrícola</option>
-                      <option value="pecuaria">Pecuária</option>
+                      <option value="">None</option>
+                      <option value="coffee">Coffee</option>
+                      <option value="cotton">Cotton</option>
+                      <option value="agricola">Agricultural</option>
+                      <option value="pecuaria">Livestock</option>
                     </select>
                   </div>
                 </div>
@@ -4486,13 +4487,13 @@ export default function GameContainer() {
                     onClick={() => setAdminEditingWeatherEffect(null)}
                     className="flex-1 py-4 bg-stone-100 text-stone-600 rounded-2xl font-bold hover:bg-stone-200 transition-all"
                   >
-                    Cancelar
+                    Cancel
                   </button>
                   <button 
                     onClick={() => adminUpdateWeatherEffect(adminEditingWeatherEffect.id, adminEditingWeatherEffect)}
                     className="flex-[2] py-4 bg-stone-900 text-white rounded-2xl font-bold hover:bg-stone-800 transition-all shadow-lg shadow-stone-200"
                   >
-                    Salvar Alterações
+                    Save Changes
                   </button>
                 </div>
               </div>
@@ -4516,14 +4517,14 @@ export default function GameContainer() {
                     <Package className="w-6 h-6 text-stone-600" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg">Vender {listingItem.name}</h3>
-                    <p className="text-xs text-stone-500">Defina os detalhes da sua oferta</p>
+                    <h3 className="font-bold text-lg">Sell {listingItem.name}</h3>
+                    <p className="text-xs text-stone-500">Set your offer details</p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-2 block">Quantidade</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-2 block">Quantity</label>
                     <div className="flex items-center gap-4">
                       <button 
                         onClick={() => setListingQty(Math.max(1, listingQty - 1))}
@@ -4538,18 +4539,18 @@ export default function GameContainer() {
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-2 block">Preço por Unidade (KZ)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-2 block">Price per Unit (KZ)</label>
                     <input 
                       type="number"
                       value={listingPrice}
                       onChange={(e) => setListingPrice(Number(e.target.value))}
                       className="w-full bg-stone-100 p-4 rounded-2xl font-mono font-bold text-xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
                     />
-                    <p className="text-[10px] text-stone-400 mt-2">Preço sugerido: {listingItem.price.toFixed(0)} KZ</p>
+                    <p className="text-[10px] text-stone-400 mt-2">Suggested price: {listingItem.price.toFixed(0)} KZ</p>
                   </div>
 
                   <div className="bg-emerald-50 p-4 rounded-2xl flex justify-between items-center">
-                    <span className="text-xs font-bold text-emerald-700">Total a Receber</span>
+                    <span className="text-xs font-bold text-emerald-700">Total to Receive</span>
                     <span className="font-mono font-bold text-emerald-700">{(listingPrice * listingQty).toLocaleString()} KZ</span>
                   </div>
                 </div>
@@ -4559,7 +4560,7 @@ export default function GameContainer() {
                     onClick={() => setListingItem(null)}
                     className="flex-1 py-4 bg-stone-100 text-stone-600 rounded-2xl font-bold hover:bg-stone-200 transition-all"
                   >
-                    Cancelar
+                    Cancel
                   </button>
                   <button 
                     onClick={() => {
@@ -4568,7 +4569,7 @@ export default function GameContainer() {
                     }}
                     className="flex-2 py-4 bg-stone-900 text-white rounded-2xl font-bold hover:bg-stone-800 transition-all"
                   >
-                    Confirmar Oferta
+                    Confirm Offer
                   </button>
                 </div>
               </div>
@@ -4595,17 +4596,81 @@ export default function GameContainer() {
             >
               <div className="p-6 space-y-6 overflow-y-auto no-scrollbar">
                 <div className="flex justify-between items-center">
-                  <h3 className="font-serif italic text-xl font-bold">Depositar</h3>
-                  <button onClick={() => setShowDeposit(false)} className="text-stone-400 hover:text-stone-600">×</button>
+                  <h3 className="font-serif italic text-xl font-bold">Deposit</h3>
+                  <button onClick={() => setShowDeposit(false)} classNam                  <div className="bg-stone-50 p-4 rounded-2xl border border-stone-100 space-y-2">
+                  <p className="text-xs font-bold text-stone-600">Method: Bank Transfer</p>
+                  <p className="text-xs text-stone-600">IBAN: <span className="font-mono font-bold">005500005049246510146</span></p>
                 </div>
                 
-                <div className="bg-stone-50 p-4 rounded-2xl border border-stone-100 space-y-2">
-                  <p className="text-xs font-bold text-stone-600">Método: PayPay AO</p>
-                  <p className="text-xs text-stone-600">Conta: seagalsilva@gmail.com</p>
-                  <p className="text-[10px] text-stone-400 mt-2 break-all">RSA: MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC5DQ6tn9fg9T/I9yguoSj4Bd9jEBBtBzH8A3Z0q0HuxkvjpydHK4t57sA4l3UM02wDd7Csnm/4W8zUUJFs+uqy3+MsUxEElBrXWiDVw9LRn/nuXF0rZ0MQwFcqNvvvNM64+QubBOAfFleSu8PgsVbVAzwGG4KQnPvGmOmzpPjLwIDAQAB</p>
+                <p className="text-xs text-stone-500">After making the transfer, enter the amount and the receipt details below to request administrator approval.</p>
+
+                <div className="space-y-4">
+                  {depositError && (
+                    <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-rose-800 font-medium leading-relaxed">{depositError}</p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Amount (KZ)</label>
+                    <input type="number" className="w-full p-3 bg-stone-50 rounded-xl border border-stone-200" placeholder="0" id="depositAmount" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Details (Name/Reference)</label>
+                    <input type="text" className="w-full p-3 bg-stone-50 rounded-xl border border-stone-200" placeholder="Enter receipt details..." id="depositDetails" />
+                  </div>
+                  
+                  <button 
+                    onClick={async () => {
+                      const amount = parseFloat((document.getElementById('depositAmount') as HTMLInputElement).value);
+                      const details = (document.getElementById('depositDetails') as HTMLInputElement).value;
+                      
+                      if (!amount || amount <= 0) {
+                        setDepositError('Enter a valid amount.');
+                        return;
+                      }
+                      if (!details) {
+                        setDepositError('Please enter payment details.');
+                        return;
+                      }
+
+                      const updates: Record<string, any> = {};
+                      
+                      const reqRef = push(ref(rtdb, `depositRequests`));
+                      updates[`depositRequests/${reqRef.key}`] = {
+                        id: reqRef.key,
+                        userId: user.uid,
+                        amountKZ: amount,
+                        details,
+                        timestamp: Date.now(),
+                        status: 'pending'
+                      };
+                      
+                      const transRef = push(ref(rtdb, `transactions/${user.uid}`));
+                      updates[`transactions/${user.uid}/${transRef.key}`] = {
+                        id: transRef.key,
+                        userId: user.uid,
+                        type: 'deposit_request',
+                        amountKZ: amount,
+                        timestamp: Date.now(),
+                        status: 'pending'
+                      };
+
+                      update(ref(rtdb), updates).then(() => {
+                        setShowDeposit(false);
+                        setDepositError(null);
+                        addNotification('Deposit request sent successfully!', 'success');
+                      }).catch(err => handleRtdbError(err, OperationType.WRITE, `depositRequests`));
+                    }}
+                    className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all"
+                  >
+                    Send Request
+                  </button>0 transition-all"
+                  >
+                    Enviar Solicitação
+                  </button>
                 </div>
-                
-                <p className="text-xs text-stone-500">Após realizar a transferência, envie o comprovativo para o suporte.</p>
               </div>
             </motion.div>
           </div>
@@ -4631,7 +4696,7 @@ export default function GameContainer() {
             >
               <div className="p-8 space-y-8 overflow-y-auto no-scrollbar">
                 <div className="flex justify-between items-center">
-                  <h3 className="font-serif italic text-2xl font-bold text-stone-900">Agendar Novo Evento</h3>
+                  <h3 className="font-serif italic text-2xl font-bold text-stone-900">Schedule New Event</h3>
                   <button onClick={() => setShowEventModal(false)} className="p-2 bg-stone-100 rounded-full text-stone-400 hover:text-stone-600 transition-colors">
                     <X className="w-5 h-5" />
                   </button>
@@ -4640,7 +4705,7 @@ export default function GameContainer() {
                 <div className="space-y-6">
                   {/* Templates */}
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400 block mb-3 tracking-widest">Modelos Rápidos</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400 block mb-3 tracking-widest">Quick Templates</label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       {Object.values(EVENT_TEMPLATES).map(template => (
                         <button
@@ -4650,7 +4715,7 @@ export default function GameContainer() {
                             name: template.name,
                             icon: template.icon,
                             description: template.description,
-                            type: template.type,
+                            type: template.type as 'bonus_yield' | 'market_boom' | 'xp_boost',
                             multiplier: template.multiplier
                           })}
                           className="p-3 bg-stone-50 border border-stone-100 rounded-2xl hover:border-stone-300 transition-all text-left"
@@ -4665,17 +4730,17 @@ export default function GameContainer() {
                   {/* Basic Info */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2 sm:col-span-1">
-                      <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Nome do Evento</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Event Name</label>
                       <input 
                         type="text"
                         value={newEventData.name}
                         onChange={(e) => setNewEventData({ ...newEventData, name: e.target.value })}
-                        placeholder="Ex: Festival do Café"
+                        placeholder="Ex: Coffee Festival"
                         className="w-full bg-stone-50 border border-stone-100 p-4 rounded-2xl outline-none text-sm focus:border-stone-300 transition-all"
                       />
                     </div>
                     <div className="col-span-2 sm:col-span-1">
-                      <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Ícone</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Icon</label>
                       <input 
                         type="text"
                         value={newEventData.icon}
@@ -4686,11 +4751,11 @@ export default function GameContainer() {
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Descrição</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Description</label>
                     <textarea 
                       value={newEventData.description}
                       onChange={(e) => setNewEventData({ ...newEventData, description: e.target.value })}
-                      placeholder="O que acontece durante este evento?"
+                      placeholder="What happens during this event?"
                       className="w-full bg-stone-50 border border-stone-100 p-4 rounded-2xl outline-none text-sm focus:border-stone-300 transition-all min-h-[100px] resize-none"
                     />
                   </div>
@@ -4698,7 +4763,7 @@ export default function GameContainer() {
                   {/* Timing */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Início</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Start</label>
                       <input 
                         type="datetime-local"
                         onChange={(e) => setNewEventData({ ...newEventData, startTime: new Date(e.target.value).getTime() })}
@@ -4706,7 +4771,7 @@ export default function GameContainer() {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Fim</label>
+                      <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">End</label>
                       <input 
                         type="datetime-local"
                         onChange={(e) => setNewEventData({ ...newEventData, endTime: new Date(e.target.value).getTime() })}
@@ -4717,7 +4782,7 @@ export default function GameContainer() {
 
                   {/* Multiplier */}
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Multiplicador (Ex: 1.5 = +50%)</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400 block mb-2 tracking-widest">Multiplier (Ex: 1.5 = +50%)</label>
                     <input 
                       type="number"
                       step="0.1"
@@ -4733,7 +4798,7 @@ export default function GameContainer() {
                     onClick={() => setShowEventModal(false)}
                     className="flex-1 py-4 bg-stone-100 text-stone-600 rounded-2xl font-bold hover:bg-stone-200 transition-all"
                   >
-                    Cancelar
+                    Cancel
                   </button>
                   <button 
                     onClick={() => {
@@ -4742,7 +4807,7 @@ export default function GameContainer() {
                     }}
                     className="flex-[2] py-4 bg-stone-900 text-white rounded-2xl font-bold hover:bg-stone-800 transition-all shadow-lg shadow-stone-200"
                   >
-                    Agendar Evento
+                    Schedule Event
                   </button>
                 </div>
               </div>
@@ -4810,13 +4875,13 @@ export default function GameContainer() {
             >
               <div className="p-6 space-y-6 overflow-y-auto no-scrollbar">
                 <div className="flex justify-between items-center">
-                  <h3 className="font-serif italic text-xl font-bold">Editar Perfil</h3>
+                  <h3 className="font-serif italic text-xl font-bold">Edit Profile</h3>
                   <button onClick={() => setShowProfileModal(false)} className="text-stone-400 hover:text-stone-600">×</button>
                 </div>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400">Nome</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400">Name</label>
                     <input 
                       type="text"
                       value={profile?.name || ''}
@@ -4825,7 +4890,7 @@ export default function GameContainer() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400">Data de Nascimento</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400">Date of Birth</label>
                     <input 
                       type="date"
                       value={profile?.dob || ''}
@@ -4843,7 +4908,7 @@ export default function GameContainer() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-stone-400">Nome do Banco</label>
+                    <label className="text-[10px] font-bold uppercase text-stone-400">Bank Name</label>
                     <input 
                       type="text"
                       value={profile?.bankName || ''}
@@ -4899,13 +4964,13 @@ export default function GameContainer() {
               <div className="p-6 space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-stone-50 p-4 rounded-2xl">
-                    <p className="text-[10px] font-bold uppercase text-stone-400 mb-1">Preço Atual</p>
+                    <p className="text-[10px] font-bold uppercase text-stone-400 mb-1">Current Price</p>
                     <div className="text-2xl font-mono font-bold text-stone-800">
                       {selectedMarketItem.currentPrice.toFixed(2)} <span className="text-sm">KZ</span>
                     </div>
                   </div>
                   <div className="bg-stone-50 p-4 rounded-2xl">
-                    <p className="text-[10px] font-bold uppercase text-stone-400 mb-1">Variação</p>
+                    <p className="text-[10px] font-bold uppercase text-stone-400 mb-1">Variation</p>
                     <div className={`text-2xl font-mono font-bold flex items-center gap-2 ${selectedMarketItem.currentPrice >= selectedMarketItem.basePrice ? 'text-emerald-600' : 'text-rose-600'}`}>
                       {selectedMarketItem.currentPrice >= selectedMarketItem.basePrice ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                       {Math.abs(((selectedMarketItem.currentPrice - selectedMarketItem.basePrice) / selectedMarketItem.basePrice) * 100).toFixed(1)}%
@@ -4934,7 +4999,7 @@ export default function GameContainer() {
                       />
                       <Tooltip 
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value: any) => [`${Number(value).toFixed(2)} KZ`, 'Preço']}
+                        formatter={(value: any) => [`${Number(value).toFixed(2)} KZ`, 'Price']}
                         labelStyle={{ color: '#78716c', fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}
                       />
                       <Line 
@@ -4973,7 +5038,7 @@ export default function GameContainer() {
             >
               <div className="p-6 space-y-6 overflow-y-auto no-scrollbar">
                 <div className="flex justify-between items-center">
-                  <h3 className="font-serif italic text-xl font-bold">Solicitar Saque</h3>
+                  <h3 className="font-serif italic text-xl font-bold">Request Withdrawal</h3>
                   <button onClick={() => { setShowWithdraw(false); setWithdrawError(null); }} className="text-stone-400 hover:text-stone-600">×</button>
                 </div>
                 
@@ -5008,15 +5073,15 @@ export default function GameContainer() {
                       const details = (document.getElementById('withdrawDetails') as HTMLInputElement).value;
                       
                       if (!profile || amount > profile.balanceKZ) {
-                        setWithdrawError('Saldo insuficiente.');
+                        setWithdrawError('Insufficient balance.');
                         return;
                       }
                       if (amount > (systemFinancials.playerDepositsMinusWithdrawals || 0)) {
-                        setWithdrawError('Saque temporariamente indisponível.');
+                        setWithdrawError('Withdrawal temporarily unavailable.');
                         return;
                       }
                       if (!details) {
-                        setWithdrawError('Por favor, insira os detalhes do pagamento.');
+                        setWithdrawError('Please enter payment details.');
                         return;
                       }
 
@@ -5065,7 +5130,7 @@ export default function GameContainer() {
 
 const AVAILABLE_ICONS = {
   animals: ['🐄', '🐖', '🐑', '🐓', '🐎', '🐐', '🦆', '🦃', '🐇', '🐝', '🐟', '🦐', '🦀', '🐃', '🐂', '🐪', '🐘', '🦒', '🦓', '🦙', '🦏', '🦛', '🦘', '🦥', '🦦', '🦫', '🦭', '🐋', '🐬', '🦈'],
-  crops: ['🌽', '🌾', '🍅', '🥕', '🥔', '🥦', '🥬', '🍓', '🍇', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍈', '🍒', '🍑', '🍍', '🥥', '🥝', '🥑', '🍆', '🍄', '🥜', '🌶️', '🫑', '🥒', '🧄', '🧅', '������', '🍠', '🥐', '🥖'],
+  crops: ['🌽', '🌾', '🍅', '🥕', '🥔', '🥦', '🥬', '🍓', '🍇', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍈', '🍒', '🍑', '🍍', '🥥', '🥝', '🥑', '🍆', '🍄', '🥜', '🌶️', '🫑', '🥒', '🧄', '🧅', '🎃', '🍠', '🥐', '🥖'],
   special: ['🥛', '🧀', '🥩', '🥓', '🍗', '🥚', '🍯', '🧶', '🍞', '🍰', '🥧', '🍦', '🍨', '🍩', '🍪', '🍫', '🍬', '🍭', '🍮', '🍷', '🍹', '🥤', '🧃', '🧉', '🍵', '☕', '🍺', '🍻', '🥂', '🍾', '🧂', '🧈']
 };
 
@@ -5130,10 +5195,10 @@ function FarmSlotCard({ slot, onPlant, onHarvest, onFeed, onWater, commodities, 
               {slot.area === 'curral' ? <PawPrint className="w-6 h-6" /> : <Sprout className="w-6 h-6" />}
             </div>
             <span className="text-[9px] font-bold uppercase tracking-widest leading-tight">
-              {slot.area === 'curral' ? 'Novo Curral' : 'Novo Cultivo'}
+              {slot.area === 'curral' ? 'New Corral' : 'New Crop'}
             </span>
             <span className="text-[7px] uppercase font-bold text-stone-300">
-              {slot.area === 'curral' ? 'Criar Animais' : 'Plantar Sementes'}
+              {slot.area === 'curral' ? 'Raise Animals' : 'Plant Seeds'}
             </span>
           </div>
         )}
@@ -5190,7 +5255,7 @@ function FarmSlotCard({ slot, onPlant, onHarvest, onFeed, onWater, commodities, 
               <p className="text-[9px] font-bold text-amber-700 uppercase leading-tight truncate">{itemInfo?.name}</p>
               {slot.area === 'curral' && (
                 <p className="text-[7px] text-amber-600/60 font-bold uppercase mt-0.5">
-                  Precisa: {requiredFoodId ? (commodities[requiredFoodId]?.name || 'Ração') : 'Ração'}
+                  Needs: {requiredFoodId ? (commodities[requiredFoodId]?.name || 'Feed') : 'Feed'}
                 </p>
               )}
             </div>
@@ -5209,13 +5274,13 @@ function FarmSlotCard({ slot, onPlant, onHarvest, onFeed, onWater, commodities, 
             >
               {itemInfo?.icon || itemInfo?.emoji || '🐄'}
             </motion.div>
-            <div className="bg-rose-500 text-white text-[7px] px-2 py-0.5 rounded-full font-bold uppercase shadow-lg shadow-rose-200">Fome</div>
+            <div className="bg-rose-500 text-white text-[7px] px-2 py-0.5 rounded-full font-bold uppercase shadow-lg shadow-rose-200">Hungry</div>
             <div className="text-center">
               <p className="text-[9px] font-bold text-rose-700 uppercase leading-tight">{itemInfo?.name}</p>
               <div className="mt-1 p-1 bg-white/50 rounded-lg border border-rose-100">
-                <p className="text-[7px] text-stone-400 uppercase font-bold">Usar:</p>
+                <p className="text-[7px] text-stone-400 uppercase font-bold">Use:</p>
                 <p className="text-[8px] font-bold text-rose-600 truncate">
-                  {requiredFoodId ? (commodities[requiredFoodId]?.name || 'Ração') : 'Ração'}
+                  {requiredFoodId ? (commodities[requiredFoodId]?.name || 'Feed') : 'Feed'}
                 </p>
               </div>
             </div>
@@ -5244,9 +5309,9 @@ function FarmSlotCard({ slot, onPlant, onHarvest, onFeed, onWater, commodities, 
                 <Package className="w-8 h-8 text-emerald-600" />
               )}
             </motion.div>
-            <span className="text-[10px] font-bold text-emerald-700 uppercase">Colher {itemInfo?.name}</span>
+            <span className="text-[10px] font-bold text-emerald-700 uppercase">Harvest {itemInfo?.name}</span>
             {slot.type === 'animal' && (
-              <span className="text-[8px] text-stone-400 font-bold">Vidas: {slot.harvestsRemaining}</span>
+              <span className="text-[8px] text-stone-400 font-bold">Lives: {slot.harvestsRemaining}</span>
             )}
           </motion.div>
         )}
@@ -5338,9 +5403,9 @@ function FarmSlotCard({ slot, onPlant, onHarvest, onFeed, onWater, commodities, 
           >
             <div className="grid grid-cols-1 gap-1">
               <div className="mb-2 text-center border-b border-stone-100 pb-1">
-                <p className="text-[8px] font-bold text-stone-400 uppercase">Alimento Necessário:</p>
+                <p className="text-[8px] font-bold text-stone-400 uppercase">Feed Needed:</p>
                 <p className="text-[10px] font-bold text-emerald-600 uppercase">
-                  {requiredFoodId ? (commodities[requiredFoodId]?.name || 'Ração') : 'Ração'}
+                  {requiredFoodId ? (commodities[requiredFoodId]?.name || 'Feed') : 'Feed'}
                 </p>
               </div>
               {Object.entries(commodities).filter(([id, data]: [string, any]) => {
@@ -5350,9 +5415,9 @@ function FarmSlotCard({ slot, onPlant, onHarvest, onFeed, onWater, commodities, 
               }).length === 0 ? (
                 <div className="flex flex-col items-center justify-center p-4 text-center">
                   <Package className="w-6 h-6 text-stone-300 mb-1" />
-                  <p className="text-[8px] font-bold text-stone-400 uppercase">Sem {requiredFoodId ? (commodities[requiredFoodId]?.name || 'Ração') : 'Ração'}</p>
-                  <p className="text-[6px] text-stone-300 mt-1 uppercase">ID: {requiredFoodId || 'Não definido'}</p>
-                  <p className="text-[6px] text-stone-300 uppercase">Estoque: {requiredFoodId ? (inventory[requiredFoodId] || 0) : 0}</p>
+                  <p className="text-[8px] font-bold text-stone-400 uppercase">No {requiredFoodId ? (commodities[requiredFoodId]?.name || 'Feed') : 'Feed'}</p>
+                  <p className="text-[6px] text-stone-300 mt-1 uppercase">ID: {requiredFoodId || 'Not defined'}</p>
+                  <p className="text-[6px] text-stone-300 uppercase">Stock: {requiredFoodId ? (inventory[requiredFoodId] || 0) : 0}</p>
                 </div>
               ) : (
                 Object.entries(commodities).filter(([id, data]: [string, any]) => {
@@ -5374,7 +5439,7 @@ function FarmSlotCard({ slot, onPlant, onHarvest, onFeed, onWater, commodities, 
                     <div className="w-6 h-6 bg-stone-100 rounded flex items-center justify-center text-[10px]">📦</div>
                     <div className="flex-1 text-left">
                       <p className="text-[10px] font-bold leading-none">{data.name}</p>
-                      <p className="text-[8px] text-emerald-600 font-bold">{inventory[id]} disp.</p>
+                      <p className="text-[8px] text-emerald-600 font-bold">{inventory[id]} avail.</p>
                     </div>
                   </button>
                 ))
@@ -5383,7 +5448,7 @@ function FarmSlotCard({ slot, onPlant, onHarvest, onFeed, onWater, commodities, 
                 onClick={(e) => { e.stopPropagation(); setShowFeedMenu(false); }}
                 className="text-[8px] font-bold text-stone-400 uppercase mt-1 py-1 hover:bg-stone-50 rounded-lg"
               >
-                Fechar
+                Close
               </button>
             </div>
           </motion.div>
@@ -5403,7 +5468,7 @@ function FarmSlotCard({ slot, onPlant, onHarvest, onFeed, onWater, commodities, 
               {Object.entries(commodities).filter(([id, data]: [string, any]) => (slot.area === 'curral' ? data.type === 'animal' : data.type === 'seed') && (inventory[id] || 0) > 0).length === 0 ? (
                 <div className="col-span-2 flex flex-col items-center justify-center p-4 text-center">
                   <Package className="w-6 h-6 text-stone-300 mb-1" />
-                  <p className="text-[8px] font-bold text-stone-400 uppercase">{slot.area === 'curral' ? 'Sem Animais' : 'Sem Sementes'}</p>
+                  <p className="text-[8px] font-bold text-stone-400 uppercase">{slot.area === 'curral' ? 'No Animals' : 'No Seeds'}</p>
                 </div>
               ) : (
                 Object.entries(commodities).filter(([id, data]: [string, any]) => (slot.area === 'curral' ? data.type === 'animal' : data.type === 'seed') && (inventory[id] || 0) > 0).map(([id, data]: [string, any]) => (
@@ -5418,16 +5483,16 @@ function FarmSlotCard({ slot, onPlant, onHarvest, onFeed, onWater, commodities, 
                   >
                     <span className="text-[10px] font-bold">{data.name}</span>
                     <span className="text-[8px] text-emerald-600 font-bold">
-                      {inventory[id]} disp.
+                      {inventory[id]} avail.
                     </span>
                   </button>
                 ))
               )}
               <button 
                 onClick={(e) => { e.stopPropagation(); setShowPlantMenu(false); }}
-                className="col-span-2 text-[8px] font-bold text-stone-400 uppercase mt-1 py-1 hover:bg-stone-50 rounded-lg"
+                className="col-span-2 text-[8px] font-bold text-stone-400 uppercase mt-1 py-1 hover:bg-stone-50 rounded-lg cursor-pointer"
               >
-                Fechar
+                Close
               </button>
             </div>
           </motion.div>
