@@ -1,0 +1,173 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Dados do jogador, incluindo saldo em KZ e XP.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "ID único do usuário." },
+        "name": { "type": "string", "description": "Nome do jogador." },
+        "email": { "type": "string", "format": "email", "description": "E-mail do jogador." },
+        "balanceKZ": { "type": "number", "description": "Saldo em Kwanza (KZ)." },
+        "xp": { "type": "number", "description": "Experiência acumulada." },
+        "level": { "type": "number", "description": "Nível do jogador." },
+        "lastLogin": { "type": "string", "format": "date-time", "description": "Data do último login." }
+      },
+      "required": ["uid", "name", "balanceKZ", "xp", "level"]
+    },
+    "FarmSlot": {
+      "title": "Farm Slot",
+      "description": "Um slot de terra na fazenda do jogador.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID do slot." },
+        "userId": { "type": "string", "description": "ID do proprietário." },
+        "type": { "type": "string", "enum": ["empty", "crop", "animal"], "description": "Tipo de ocupação do slot." },
+        "itemId": { "type": "string", "description": "ID do item plantado ou animal." },
+        "plantedAt": { "type": "string", "format": "date-time", "description": "Data/hora da plantação." },
+        "harvestAt": { "type": "string", "format": "date-time", "description": "Data/hora prevista para colheita." },
+        "status": { "type": "string", "enum": ["growing", "ready", "empty"], "description": "Status atual do slot." }
+      },
+      "required": ["id", "type", "status"]
+    },
+    "InventoryItem": {
+      "title": "Inventory Item",
+      "description": "Item no inventário do jogador.",
+      "type": "object",
+      "properties": {
+        "itemId": { "type": "string", "description": "ID do item (milho, cafe, etc)." },
+        "userId": { "type": "string", "description": "ID do proprietário." },
+        "quantity": { "type": "number", "description": "Quantidade possuída." }
+      },
+      "required": ["itemId", "userId", "quantity"]
+    },
+    "MarketItem": {
+      "title": "Market Item",
+      "description": "Dados de um item no mercado dinâmico.",
+      "type": "object",
+      "properties": {
+        "itemId": { "type": "string", "description": "ID do item." },
+        "name": { "type": "string", "description": "Nome do item." },
+        "currentPrice": { "type": "number", "description": "Preço atual de mercado." },
+        "basePrice": { "type": "number", "description": "Preço base de referência." },
+        "volume6h": { "type": "number", "description": "Volume de vendas nas últimas 6h." },
+        "trend": { "type": "string", "enum": ["up", "down", "stable"], "description": "Tendência de preço." },
+        "lastUpdate": { "type": "string", "format": "date-time", "description": "Última atualização de preço." }
+      },
+      "required": ["itemId", "name", "currentPrice", "basePrice", "volume6h", "trend"]
+    },
+    "GlobalConfig": {
+      "title": "Global Config",
+      "description": "Configurações globais do jogo (commodities, taxas, etc).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID da configuração." },
+        "data": { "type": "object", "description": "Dados da configuração." }
+      },
+      "required": ["id", "data"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Registro de movimentação financeira (compra, venda, depósito, saque).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID único da transação." },
+        "userId": { "type": "string", "description": "ID do usuário envolvido." },
+        "type": { "type": "string", "enum": ["purchase", "sale", "deposit", "withdrawal_request"], "description": "Tipo da transação." },
+        "amountKZ": { "type": "number", "description": "Valor em Kwanza envolvido." },
+        "itemId": { "type": "string", "description": "ID do item (se aplicável)." },
+        "quantity": { "type": "number", "description": "Quantidade (se aplicável)." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Data e hora da transação." },
+        "status": { "type": "string", "description": "Status (ex: pending, completed, rejected)." }
+      },
+      "required": ["id", "userId", "type", "amountKZ", "timestamp", "status"]
+    },
+    "WithdrawalRequest": {
+      "title": "Withdrawal Request",
+      "description": "Solicitação de saque via IBAN ou PayPal AO.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID da solicitação." },
+        "userId": { "type": "string", "description": "ID do usuário." },
+        "amountKZ": { "type": "number", "description": "Valor a sacar." },
+        "method": { "type": "string", "enum": ["iban", "paypal_ao"], "description": "Método de saque." },
+        "details": { "type": "string", "description": "Dados do IBAN ou conta PayPal." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Data da solicitação." },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "Status da solicitação." }
+      },
+      "required": ["id", "userId", "amountKZ", "method", "details", "timestamp", "status"]
+    },
+    "SystemFinances": {
+      "title": "System Finances",
+      "description": "Finanças do sistema (Banca e Lucro).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID da configuração." },
+        "playerDepositsMinusWithdrawals": { "type": "number", "description": "Banca do Sistema (Depósitos - Saques)." },
+        "marketProfit": { "type": "number", "description": "Lucro do Mercado do Sistema." }
+      },
+      "required": ["id", "playerDepositsMinusWithdrawals", "marketProfit"]
+    },
+    "Production": {
+      "title": "Production",
+      "description": "Processo de produção ativo para um usuário.",
+      "type": "object",
+      "properties": {
+        "recipeId": { "type": "string", "description": "ID da receita sendo produzida." },
+        "startTime": { "type": "number", "description": "Timestamp de início da produção." },
+        "duration": { "type": "number", "description": "Duração total em segundos." },
+        "endTime": { "type": "number", "description": "Timestamp previsto para o fim." }
+      },
+      "required": ["recipeId", "startTime", "duration", "endTime"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Perfil do usuário."
+    },
+    "/farmSlots/{slotId}": {
+      "schema": "FarmSlot",
+      "description": "Slots da fazenda (slotId = userId_slotIndex)."
+    },
+    "/inventory/{inventoryId}": {
+      "schema": "InventoryItem",
+      "description": "Inventário do usuário (inventoryId = userId_itemId)."
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Histórico global de transações."
+    },
+    "/withdrawalRequests/{requestId}": {
+      "schema": "WithdrawalRequest",
+      "description": "Solicitações de saque."
+    },
+    "/market/{itemId}": {
+      "schema": "MarketItem",
+      "description": "Estado global do mercado."
+    },
+    "/globalConfig/{configId}": {
+      "schema": "GlobalConfig",
+      "description": "Configurações globais do sistema."
+    },
+    "/systemFinances/{financesId}": {
+      "schema": "SystemFinances",
+      "description": "Finanças do sistema."
+    },
+    "/productions/{productionId}": {
+      "schema": "Production",
+      "description": "Processos de produção ativos (productionId = userId_recipeId)."
+    }
+  },
+  "realtimeDatabase": {
+    "users/$userId": { "schema": "User", "description": "User profiles" },
+    "farmSlots/$userId/$slotId": { "schema": "FarmSlot", "description": "User farm slots" },
+    "inventory/$userId/$itemId": { "schema": "InventoryItem", "description": "User inventory items" },
+    "market/$itemId": { "schema": "MarketItem", "description": "Global market items" },
+    "transactions/$userId/$transactionId": { "schema": "Transaction", "description": "User transaction history" },
+    "withdrawalRequests/$requestId": { "schema": "WithdrawalRequest", "description": "User withdrawal requests" },
+    "globalConfig/game": { "schema": "GlobalConfig", "description": "Global game configuration" },
+    "globalConfig/systemFinances": { "schema": "SystemFinances", "description": "System finances" },
+    "productions/$userId/$recipeId": { "schema": "Production", "description": "Active user productions" }
+  }
+}

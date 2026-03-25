@@ -1,0 +1,11 @@
+{
+  "projectId": "kwanzaclick",
+  "appId": "1:140060118241:web:3fdf84bb8654844a74bba0",
+  "apiKey": "AIzaSyBcjcNzMLCv-jSCpy9N29GmEESVqRn_xRU",
+  "authDomain": "kwanzaclick.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "kwanzaclick.appspot.com",
+  "databaseURL": "https://kwanzaclick-default-rtdb.europe-west1.firebasedatabase.app",
+  "messagingSenderId": "140060118241",
+  "measurementId": "G-QC255LPQWN"
+}

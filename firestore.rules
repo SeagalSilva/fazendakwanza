@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+        (request.auth.token.email == "seagalsilva@gmail.com" && request.auth.token.email_verified == true)
+      );
+    }
+
+    // User profile rules
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isOwner(userId) && (
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) || isAdmin()
+      );
+    }
+
+    // Farm slots rules (Root)
+    match /farmSlots/{slotId} {
+      allow read, write: if isAuthenticated() && (
+        (resource == null && request.resource.data.userId == request.auth.uid) ||
+        (resource != null && resource.data.userId == request.auth.uid) ||
+        isAdmin()
+      );
+    }
+
+    // Inventory rules (Root)
+    match /inventory/{inventoryId} {
+      allow read, write: if isAuthenticated() && (
+        (resource == null && request.resource.data.userId == request.auth.uid) ||
+        (resource != null && resource.data.userId == request.auth.uid) ||
+        isAdmin()
+      );
+    }
+
+    // Transaction history rules (Root)
+    match /transactions/{transactionId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin(); // History should be immutable for users
+    }
+
+    // Market rules (Global)
+    match /market/{itemId} {
+      allow read: if true; // Market prices are public
+      allow write: if isAdmin(); // Only system/admin can update market prices directly
+    }
+
+    // Global Config rules
+    match /globalConfig/{configId} {
+      allow read: if true; // Game config is public
+      allow write: if isAdmin();
+    }
+  }
+}
